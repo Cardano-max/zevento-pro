@@ -15,6 +15,7 @@ import { ConsentRequiredGuard } from './guards/consent-required.guard';
     ContactMaskingService,
     AuditLogService,
     ConsentRequiredGuard,
+    MaskPhoneInterceptor,
   ],
   controllers: [ConsentController],
   exports: [
