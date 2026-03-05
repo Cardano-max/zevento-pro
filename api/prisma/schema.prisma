@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  phone       String     @unique @db.VarChar(15)
+  name        String?    @db.VarChar(100)
+  email       String?    @db.VarChar(255)
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  roles       UserRole[]
+  consentLogs ConsentLog[]
+
+  @@map("users")
+}
+
+model UserRole {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  role      String    @db.VarChar(20)
+  contextId String?   @map("context_id") @db.Uuid
+  isActive  Boolean   @default(true) @map("is_active")
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  grantedBy String?   @map("granted_by") @db.Uuid
+  revokedAt DateTime? @map("revoked_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, contextId])
+  @@index([userId])
+  @@index([role])
+  @@map("user_roles")
+}
+
+model Market {
+  id         String    @id @default(uuid()) @db.Uuid
+  city       String    @db.VarChar(100)
+  state      String    @db.VarChar(100)
+  status     String    @default("PLANNED") @db.VarChar(20)
+  launchDate DateTime? @map("launch_date")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@unique([city, state])
+  @@map("markets")
+}
+
+model ConsentLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  consentType String   @map("consent_type") @db.VarChar(30)
+  status      String   @db.VarChar(20)
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.Text
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([consentType])
+  @@map("consent_logs")
+}
+
+model WebhookEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  provider    String    @db.VarChar(30)
+  eventType   String    @map("event_type") @db.VarChar(50)
+  externalId  String    @map("external_id") @db.VarChar(100)
+  status      String    @default("RECEIVED") @db.VarChar(20)
+  payload     Json
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, externalId, eventType])
+  @@index([provider, status])
+  @@map("webhook_events")
+}
