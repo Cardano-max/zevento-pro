@@ -56,6 +56,10 @@ Recent decisions affecting current work:
 - [01-03]: ConsentRequiredGuard logs BOTH granted and denied access attempts — denied access is auditable for compliance
 - [01-03]: ADMIN role bypasses consent guard in all paths — can view any data for compliance and support purposes
 - [01-03]: AuditLogService reuses consent_logs table with auditEvent metadata — avoids schema migration for audit trail
+- [Phase 01-02]: MSG91 skips API in dev mode (NODE_ENV=development) — OTP logged to console to prevent SMS cost during development
+- [Phase 01-02]: JWT expiry 7 days — mobile-first long session UX, no refresh token rotation needed at this phase
+- [Phase 01-02]: JwtStrategy validates user against DB on every request — prevents stale token attacks after deactivation or role revocation
+- [Phase 01-02]: Admin role revocation uses soft-delete (isActive=false, revokedAt) — preserves audit trail, never hard-deletes role records
 
 ### Pending Todos
 
