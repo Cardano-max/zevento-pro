@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 1 of 7 (Foundation)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-03-04 — Roadmap created, STATE.md initialized
+Plan: 1 of 3 in current phase
+Status: Executing — 01-01 complete, ready for 01-02
+Last activity: 2026-03-05 — 01-01 complete (monorepo, Docker, NestJS API, Prisma schema)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 5% (1/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 34 min
+- Total execution time: 0.57 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-foundation | 1/3 | 34 min | 34 min |
 
 **Recent Trend:**
-- Last 5 plans: none yet
-- Trend: -
+- Last 5 plans: 01-01 (34 min)
+- Trend: baseline established
 
 *Updated after each plan completion*
 
@@ -47,10 +47,15 @@ Recent decisions affecting current work:
 - [Roadmap]: B2B product marketplace deferred to Phase 6 — after core lead-to-booking-to-payment flywheel is validated
 - [Roadmap]: Razorpay Payout KYC application must be submitted during Phase 2 (approval takes 2-4 weeks; blocks Phase 5 payouts)
 - [Roadmap]: TRAI DLT SMS template registration must be completed before Phase 1 development ends (unregistered templates are operator-blocked)
+- [01-01]: Roles stored in user_roles table (not users.role column) — multi-role identity, prevents role-lock at account level
+- [01-01]: markets is a first-class table (not city string) — city expansion without data migration
+- [01-01]: webhook_events (provider, externalId, eventType) unique constraint — hard idempotency guard for Razorpay double-delivery
+- [01-01]: All IDs are UUID v4 — no sequential ID enumeration attacks
+- [01-01]: pnpm-workspace.yaml onlyBuiltDependencies for Prisma/NestJS — resolves pnpm v10 strict build script security mode
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
@@ -63,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04
-Stopped at: Roadmap created and written to .planning/ROADMAP.md; REQUIREMENTS.md traceability updated; STATE.md initialized
+Last session: 2026-03-05
+Stopped at: 01-01 complete; next is 01-02 (OTP Auth)
 Resume file: None
