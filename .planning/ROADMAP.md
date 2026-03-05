@@ -51,7 +51,7 @@ Plans:
   3. Vendor can select a subscription plan (Basic or Premium, for Planner or Supplier tier) and complete recurring billing via Razorpay — subscription auto-renews without manual action
   4. Admin can add, edit, or disable event categories and service types that appear across the platform
   5. Admin can manage subscription plan definitions and pricing from the admin panel without a code deploy
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 02-01: Vendor profile creation flow — business details, service area (lat/lng + radius, PostGIS-ready), portfolio gallery (Cloudinary), progressive onboarding gate
