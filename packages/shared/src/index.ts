@@ -1,2 +1,3 @@
 export * from './enums';
 export * from './types/user';
+export * from './types/consent';
