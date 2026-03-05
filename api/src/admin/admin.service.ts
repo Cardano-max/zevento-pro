@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
+import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { KycAction, ReviewKycDto } from './dto/review-kyc.dto';
 
 @Injectable()
@@ -302,5 +305,286 @@ export class AdminService {
       page,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  // ──────────────────────────────────────────────────
+  // Event Category Management
+  // ──────────────────────────────────────────────────
+
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  async createCategory(dto: CreateCategoryDto) {
+    const slug = this.generateSlug(dto.name);
+
+    const existing = await this.prisma.eventCategory.findFirst({
+      where: { OR: [{ name: dto.name }, { slug }] },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Category with name "${dto.name}" already exists`,
+      );
+    }
+
+    if (dto.parentId) {
+      const parent = await this.prisma.eventCategory.findUnique({
+        where: { id: dto.parentId },
+      });
+      if (!parent) {
+        throw new NotFoundException(`Parent category ${dto.parentId} not found`);
+      }
+    }
+
+    return this.prisma.eventCategory.create({
+      data: {
+        name: dto.name,
+        slug,
+        description: dto.description,
+        parentId: dto.parentId,
+        sortOrder: dto.sortOrder ?? 0,
+      },
+    });
+  }
+
+  async updateCategory(categoryId: string, dto: UpdateCategoryDto) {
+    const category = await this.prisma.eventCategory.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category ${categoryId} not found`);
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (dto.name !== undefined) {
+      const slug = this.generateSlug(dto.name);
+
+      const existing = await this.prisma.eventCategory.findFirst({
+        where: {
+          OR: [{ name: dto.name }, { slug }],
+          NOT: { id: categoryId },
+        },
+      });
+
+      if (existing) {
+        // Try with numeric suffix
+        let uniqueSlug = slug;
+        let suffix = 2;
+        while (true) {
+          const conflict = await this.prisma.eventCategory.findUnique({
+            where: { slug: uniqueSlug },
+          });
+          if (!conflict || conflict.id === categoryId) break;
+          uniqueSlug = `${slug}-${suffix}`;
+          suffix++;
+        }
+
+        // Name must still be unique
+        if (existing.name === dto.name) {
+          throw new ConflictException(
+            `Category with name "${dto.name}" already exists`,
+          );
+        }
+
+        updateData.slug = uniqueSlug;
+      } else {
+        updateData.slug = slug;
+      }
+
+      updateData.name = dto.name;
+    }
+
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.parentId !== undefined) updateData.parentId = dto.parentId;
+    if (dto.sortOrder !== undefined) updateData.sortOrder = dto.sortOrder;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+
+    return this.prisma.eventCategory.update({
+      where: { id: categoryId },
+      data: updateData,
+    });
+  }
+
+  async listCategories(includeInactive = false) {
+    const where = includeInactive ? {} : { isActive: true };
+
+    return this.prisma.eventCategory.findMany({
+      where,
+      include: {
+        parent: { select: { id: true, name: true } },
+        children: { select: { id: true, name: true, slug: true, isActive: true } },
+        _count: { select: { vendors: true } },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  async getCategoryDetail(categoryId: string) {
+    const category = await this.prisma.eventCategory.findUnique({
+      where: { id: categoryId },
+      include: {
+        parent: { select: { id: true, name: true } },
+        children: { select: { id: true, name: true, slug: true, isActive: true, sortOrder: true } },
+        _count: { select: { vendors: true } },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category ${categoryId} not found`);
+    }
+
+    return category;
+  }
+
+  // ──────────────────────────────────────────────────
+  // Subscription Plan Management
+  // ──────────────────────────────────────────────────
+
+  async createPlan(dto: CreatePlanDto) {
+    const existing = await this.prisma.subscriptionPlan.findUnique({
+      where: {
+        vendorRole_tier: {
+          vendorRole: dto.vendorRole,
+          tier: dto.tier,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Plan for ${dto.vendorRole} ${dto.tier} already exists`,
+      );
+    }
+
+    return this.prisma.subscriptionPlan.create({
+      data: {
+        name: dto.name,
+        vendorRole: dto.vendorRole,
+        tier: dto.tier,
+        amountPaise: dto.amountPaise,
+        periodMonths: dto.periodMonths ?? 1,
+        features: dto.features
+          ? (dto.features as Prisma.InputJsonValue)
+          : undefined,
+      },
+    });
+  }
+
+  async updatePlan(planId: string, dto: UpdatePlanDto) {
+    const plan = await this.prisma.subscriptionPlan.findUnique({
+      where: { id: planId },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`Plan ${planId} not found`);
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.features !== undefined) updateData.features = dto.features;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+
+    if (dto.amountPaise !== undefined) {
+      updateData.amountPaise = dto.amountPaise;
+      // Razorpay plans are immutable — price change requires new plan
+      if (plan.razorpayPlanId && dto.amountPaise !== plan.amountPaise) {
+        updateData.razorpayPlanId = null;
+      }
+    }
+
+    return this.prisma.subscriptionPlan.update({
+      where: { id: planId },
+      data: updateData,
+    });
+  }
+
+  async listPlans(vendorRole?: string, includeInactive = false) {
+    const where: Record<string, unknown> = {};
+    if (vendorRole) where.vendorRole = vendorRole;
+    if (!includeInactive) where.isActive = true;
+
+    return this.prisma.subscriptionPlan.findMany({
+      where,
+      include: {
+        _count: { select: { subscriptions: true } },
+      },
+      orderBy: [{ vendorRole: 'asc' }, { tier: 'asc' }],
+    });
+  }
+
+  async getPlanDetail(planId: string) {
+    const plan = await this.prisma.subscriptionPlan.findUnique({
+      where: { id: planId },
+      include: {
+        _count: { select: { subscriptions: true } },
+      },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`Plan ${planId} not found`);
+    }
+
+    return plan;
+  }
+
+  // ──────────────────────────────────────────────────
+  // Admin Notifications
+  // ──────────────────────────────────────────────────
+
+  async getNotifications(page = 1, limit = 20, unreadOnly = false) {
+    const skip = (page - 1) * limit;
+    const where = unreadOnly ? { isRead: false } : {};
+
+    const [data, total, unreadCount] = await Promise.all([
+      this.prisma.adminNotification.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.adminNotification.count({ where }),
+      this.prisma.adminNotification.count({ where: { isRead: false } }),
+    ]);
+
+    return { data, total, unreadCount, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  async markNotificationRead(notificationId: string) {
+    const notification = await this.prisma.adminNotification.findUnique({
+      where: { id: notificationId },
+    });
+
+    if (!notification) {
+      throw new NotFoundException(`Notification ${notificationId} not found`);
+    }
+
+    return this.prisma.adminNotification.update({
+      where: { id: notificationId },
+      data: { isRead: true },
+    });
+  }
+
+  async markAllNotificationsRead() {
+    const result = await this.prisma.adminNotification.updateMany({
+      where: { isRead: false },
+      data: { isRead: true },
+    });
+
+    return { count: result.count };
+  }
+
+  async getUnreadCount() {
+    const count = await this.prisma.adminNotification.count({
+      where: { isRead: false },
+    });
+
+    return { unreadCount: count };
   }
 }

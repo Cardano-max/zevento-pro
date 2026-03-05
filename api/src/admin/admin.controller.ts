@@ -14,6 +14,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
+import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { AssignRoleDto } from './dto/manage-role.dto';
 import { ReviewKycDto } from './dto/review-kyc.dto';
 
@@ -118,5 +120,98 @@ export class AdminController {
   @Patch('vendors/:vendorId/reactivate')
   async reactivateVendor(@Param('vendorId') vendorId: string) {
     return this.adminService.reactivateVendor(vendorId);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Event Category Management
+  // ──────────────────────────────────────────────────
+
+  @Post('categories')
+  async createCategory(@Body() dto: CreateCategoryDto) {
+    return this.adminService.createCategory(dto);
+  }
+
+  @Patch('categories/:categoryId')
+  async updateCategory(
+    @Param('categoryId') categoryId: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.adminService.updateCategory(categoryId, dto);
+  }
+
+  @Get('categories')
+  async listCategories(
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return this.adminService.listCategories(includeInactive === 'true');
+  }
+
+  @Get('categories/:categoryId')
+  async getCategoryDetail(@Param('categoryId') categoryId: string) {
+    return this.adminService.getCategoryDetail(categoryId);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Subscription Plan Management
+  // ──────────────────────────────────────────────────
+
+  @Post('subscription-plans')
+  async createPlan(@Body() dto: CreatePlanDto) {
+    return this.adminService.createPlan(dto);
+  }
+
+  @Patch('subscription-plans/:planId')
+  async updatePlan(
+    @Param('planId') planId: string,
+    @Body() dto: UpdatePlanDto,
+  ) {
+    return this.adminService.updatePlan(planId, dto);
+  }
+
+  @Get('subscription-plans')
+  async listPlans(
+    @Query('vendorRole') vendorRole?: string,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return this.adminService.listPlans(vendorRole, includeInactive === 'true');
+  }
+
+  @Get('subscription-plans/:planId')
+  async getPlanDetail(@Param('planId') planId: string) {
+    return this.adminService.getPlanDetail(planId);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Admin Notifications
+  // ──────────────────────────────────────────────────
+
+  @Get('notifications')
+  async getNotifications(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('unreadOnly') unreadOnly?: string,
+  ) {
+    return this.adminService.getNotifications(
+      parseInt(page, 10),
+      parseInt(limit, 10),
+      unreadOnly === 'true',
+    );
+  }
+
+  @Get('notifications/unread-count')
+  async getUnreadCount() {
+    return this.adminService.getUnreadCount();
+  }
+
+  @Patch('notifications/:notificationId/read')
+  async markNotificationRead(
+    @Param('notificationId') notificationId: string,
+  ) {
+    return this.adminService.markNotificationRead(notificationId);
+  }
+
+  @Post('notifications/mark-all-read')
+  async markAllNotificationsRead() {
+    return this.adminService.markAllNotificationsRead();
   }
 }
