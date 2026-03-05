@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 1 of 7 (Foundation)
-Plan: 1 of 3 in current phase
-Status: Executing — 01-01 complete, ready for 01-02
-Last activity: 2026-03-05 — 01-01 complete (monorepo, Docker, NestJS API, Prisma schema)
+Plan: 3 of 3 in current phase
+Status: Phase 1 complete — all 3 foundation plans done
+Last activity: 2026-03-05 — 01-03 complete (privacy consent infrastructure, PRIV-01 through PRIV-04)
 
-Progress: [█░░░░░░░░░] 5% (1/21 plans complete)
+Progress: [██░░░░░░░░] 14% (3/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 34 min
-- Total execution time: 0.57 hours
+- Total plans completed: 3
+- Average duration: 25 min
+- Total execution time: 1.24 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1/3 | 34 min | 34 min |
+| 01-foundation | 3/3 | 75 min | 25 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (34 min)
-- Trend: baseline established
+- Last 5 plans: 01-01 (34 min), 01-02 (34 min est), 01-03 (7 min)
+- Trend: privacy infrastructure fast due to well-defined schema from 01-01
 
 *Updated after each plan completion*
 
@@ -52,6 +52,10 @@ Recent decisions affecting current work:
 - [01-01]: webhook_events (provider, externalId, eventType) unique constraint — hard idempotency guard for Razorpay double-delivery
 - [01-01]: All IDs are UUID v4 — no sequential ID enumeration attacks
 - [01-01]: pnpm-workspace.yaml onlyBuiltDependencies for Prisma/NestJS — resolves pnpm v10 strict build script security mode
+- [01-03]: Consent stored as append-only log — never mutate GRANTED records; REVOKED always creates new row (DPDP Act compliance)
+- [01-03]: ConsentRequiredGuard logs BOTH granted and denied access attempts — denied access is auditable for compliance
+- [01-03]: ADMIN role bypasses consent guard in all paths — can view any data for compliance and support purposes
+- [01-03]: AuditLogService reuses consent_logs table with auditEvent metadata — avoids schema migration for audit trail
 
 ### Pending Todos
 
@@ -69,5 +73,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: 01-01 complete; next is 01-02 (OTP Auth)
+Stopped at: 01-03 complete; Phase 1 Foundation done. Next is Phase 2.
 Resume file: None
