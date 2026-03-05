@@ -1,0 +1,6 @@
+{
+  "name": "@zevento/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zevento customer-facing web app (Next.js — scaffolded in Phase 2)"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "@zevento/vendor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zevento vendor dashboard app (Next.js — scaffolded in Phase 3)"
+}
