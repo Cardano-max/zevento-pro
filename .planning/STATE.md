@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 2 — Vendor Onboarding & Subscriptions
 
 ## Current Position
 
-Phase: 1 of 7 (Foundation)
-Plan: 3 of 3 in current phase
-Status: Phase 1 complete — all 3 foundation plans done
-Last activity: 2026-03-05 — 01-03 complete (privacy consent infrastructure, PRIV-01 through PRIV-04)
+Phase: 2 of 7 (Vendor Onboarding & Subscriptions)
+Plan: 1 of 3 in current phase
+Status: 02-01 complete — vendor onboarding schema, Cloudinary, and progressive onboarding API
+Last activity: 2026-03-06 — 02-01 complete (Phase 2 schema, Cloudinary upload, vendor onboarding Steps 2-5)
 
-Progress: [██░░░░░░░░] 14% (3/21 plans complete)
+Progress: [██░░░░░░░░] 19% (4/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 25 min
-- Total execution time: 1.24 hours
+- Total plans completed: 4
+- Average duration: 22 min
+- Total execution time: 1.46 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 75 min | 25 min |
+| 02-vendor-onboarding-subscriptions | 1/3 | 13 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (34 min), 01-02 (34 min est), 01-03 (7 min)
-- Trend: privacy infrastructure fast due to well-defined schema from 01-01
+- Last 5 plans: 01-01 (34 min), 01-02 (34 min est), 01-03 (7 min), 02-01 (13 min)
+- Trend: execution accelerating with established patterns and schema conventions
 
 *Updated after each plan completion*
 
@@ -60,6 +61,11 @@ Recent decisions affecting current work:
 - [Phase 01-02]: JWT expiry 7 days — mobile-first long session UX, no refresh token rotation needed at this phase
 - [Phase 01-02]: JwtStrategy validates user against DB on every request — prevents stale token attacks after deactivation or role revocation
 - [Phase 01-02]: Admin role revocation uses soft-delete (isActive=false, revokedAt) — preserves audit trail, never hard-deletes role records
+- [02-01]: PostGIS image is backward-compatible drop-in — no existing queries affected, enables Phase 3 geography
+- [02-01]: onboardingStep uses max(current, N) — vendors can revisit earlier steps without losing progress
+- [02-01]: Cloudinary returns mock data in dev when env vars missing — prevents blocking development
+- [02-01]: VendorOwnerGuard attaches vendorId to req — simpler controller signatures, ADMIN bypasses
+- [02-01]: All pricing amounts in paise — consistent with Indian payment conventions
 
 ### Pending Todos
 
@@ -76,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-05
-Stopped at: 01-03 complete; Phase 1 Foundation done. Next is Phase 2.
+Last session: 2026-03-06
+Stopped at: Completed 02-01-PLAN.md — vendor onboarding schema, Cloudinary, progressive API. Next: 02-02 (subscription billing).
 Resume file: None
