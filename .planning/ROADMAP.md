@@ -70,12 +70,12 @@ Plans:
   3. Customer receives an immediate acknowledgment and a Top 3 vendor shortlist within seconds; the underlying routing job runs asynchronously without blocking the response
   4. The routing engine scores vendors using the weighted formula (Subscription Tier 30%, Rating 20%, Response Rate 20%, Location Match 20%, Fairness Rotation 10%) with vendor score factors pre-cached in Redis for sub-10ms routing
   5. Mode A routing (direct profile visit) sends the lead to that single vendor; Mode B routing (category/general inquiry) sends to Top 3 — both trigger Firebase push notifications to assigned vendors
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Customer-facing frontend — category browsing, vendor search/filter (city, budget, event type), vendor profile pages with portfolio and ratings
-- [ ] 03-02: Lead creation with consent — inquiry form, consent gate (PRIV-02), lead record creation, PostGIS distance matching, ScoringService (weighted formula), Redis score cache
-- [ ] 03-03: Async routing engine — BullMQ lead routing jobs, Mode A/B routing logic, fairness rotation cap, Top 3 assignment, Firebase FCM push (NOTF-01), vendor score cache invalidation
+- [ ] 03-01-PLAN.md — Schema additions (Lead, LeadAssignment, VendorStats, DeviceToken, PostGIS extension) + public customer browsing API (categories, vendor search/filter, vendor profile)
+- [ ] 03-02-PLAN.md — Lead creation with consent gate, ScoringService (weighted formula), Redis score cache, PostGIS distance matching
+- [ ] 03-03-PLAN.md — BullMQ async routing (Mode A/B), fairness rotation cap, Top 3 assignment, Firebase FCM push notifications, device token registration
 
 ---
 
