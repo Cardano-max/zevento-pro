@@ -66,6 +66,11 @@ Recent decisions affecting current work:
 - [02-01]: Cloudinary returns mock data in dev when env vars missing — prevents blocking development
 - [02-01]: VendorOwnerGuard attaches vendorId to req — simpler controller signatures, ADMIN bypasses
 - [02-01]: All pricing amounts in paise — consistent with Indian payment conventions
+- [02-02]: RazorpayService uses dev mock mode when env vars missing — consistent with MSG91 and Cloudinary patterns
+- [02-02]: Lazy plan sync — Razorpay plans created on first checkout, not at seed time
+- [02-02]: Cancel at cycle end — vendor retains access until current billing period expires
+- [02-02]: Webhook returns 200 on processing errors to prevent Razorpay retry storms
+- [02-02]: Idempotency key: subscriptionId_event_paymentId — unique per charge event
 - [Phase 02-03]: KYC review creates AdminNotification in same transaction — atomic audit trail
 - [Phase 02-03]: Subscription plan price change resets razorpayPlanId to null — forces lazy re-creation (Razorpay plans immutable)
 - [Phase 02-03]: Category slug collision on rename appends numeric suffix — prevents uniqueness violation
@@ -86,5 +91,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Completed 02-03-PLAN.md — admin operations API (KYC review, categories, plans, notifications). Phase 2 complete.
+Stopped at: Completed 02-02-PLAN.md — subscription billing (Razorpay checkout, webhook lifecycle, transaction ledger). 02-03 state already advanced.
 Resume file: None
