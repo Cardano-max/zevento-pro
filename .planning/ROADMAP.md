@@ -12,8 +12,8 @@ Zevento Pro is a three-sided Indian event marketplace built in seven sequential 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Lock auth, identity schema, privacy infrastructure, and dev environment before any business logic ships
-- [ ] **Phase 2: Vendor Onboarding and Subscriptions** - Vendors can register, build profiles, and activate subscription billing; admins can approve KYC
+- [x] **Phase 1: Foundation** - Lock auth, identity schema, privacy infrastructure, and dev environment before any business logic ships
+- [x] **Phase 2: Vendor Onboarding and Subscriptions** - Vendors can register, build profiles, and activate subscription billing; admins can approve KYC
 - [ ] **Phase 3: Lead Routing Engine** - Customers can submit event inquiries that get routed to the Top 3 matched vendors in real time
 - [ ] **Phase 4: Vendor CRM and Booking Flow** - Vendors can respond to leads, submit quotes, manage calendars, and close bookings; customers can accept quotes and leave reviews
 - [ ] **Phase 5: Payments and Commission Settlement** - Customer payments processed, platform commission captured, vendor payouts disbursed
@@ -157,8 +157,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
-| 2. Vendor Onboarding and Subscriptions | 0/3 | Not started | - |
+| 1. Foundation | 3/3 | Complete | 2026-03-05 |
+| 2. Vendor Onboarding and Subscriptions | 3/3 | Complete | 2026-03-06 |
 | 3. Lead Routing Engine | 0/3 | Not started | - |
 | 4. Vendor CRM and Booking Flow | 0/3 | Not started | - |
 | 5. Payments and Commission Settlement | 0/3 | Not started | - |
