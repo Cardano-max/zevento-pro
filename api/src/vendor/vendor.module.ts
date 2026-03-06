@@ -6,6 +6,6 @@ import { VendorOwnerGuard } from './guards/vendor-owner.guard';
 @Module({
   controllers: [VendorController],
   providers: [VendorService, VendorOwnerGuard],
-  exports: [VendorService],
+  exports: [VendorService, VendorOwnerGuard],
 })
 export class VendorModule {}

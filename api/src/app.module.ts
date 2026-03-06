@@ -5,6 +5,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { RedisModule } from './redis/redis.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 import { VendorModule } from './vendor/vendor.module';
 
 @Controller()
@@ -21,7 +22,7 @@ class AppController {
 }
 
 @Module({
-  imports: [PrismaModule, RedisModule, AuthModule, AdminModule, PrivacyModule, CloudinaryModule, VendorModule],
+  imports: [PrismaModule, RedisModule, AuthModule, AdminModule, PrivacyModule, CloudinaryModule, VendorModule, SubscriptionModule],
   controllers: [AppController],
   providers: [],
 })
