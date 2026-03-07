@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 2 complete — next is Phase 3 (Lead Routing Engine)
+**Current focus:** Phase 3 (Lead Routing Engine) — Plan 1 complete, continuing
 
 ## Current Position
 
-Phase: 2 of 7 (Vendor Onboarding & Subscriptions) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase 2 verified and complete. All 5 success criteria passed.
-Last activity: 2026-03-06 — Phase 2 verification passed (5/5 must-haves)
+Phase: 3 of 7 (Lead Routing Engine) — IN PROGRESS
+Plan: 1 of 3 in current phase
+Status: Plan 03-01 complete. Schema models + customer browsing API deployed.
+Last activity: 2026-03-07 — Plan 03-01 executed (2/2 tasks)
 
-Progress: [███░░░░░░░] 29% (6/21 plans complete)
+Progress: [████░░░░░░] 33% (7/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 17 min
-- Total execution time: 1.54 hours
+- Total plans completed: 7
+- Average duration: 15 min
+- Total execution time: 1.63 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [███░░░░░░░] 29% (6/21 plans complete)
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 75 min | 25 min |
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
+| 03-lead-routing-engine | 1/3 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (34 min est), 01-03 (7 min), 02-01 (13 min), 02-03 (5 min)
+- Last 5 plans: 01-03 (7 min), 02-01 (13 min), 02-03 (5 min), 03-01 (5 min)
 - Trend: execution accelerating with established patterns and schema conventions
 
 *Updated after each plan completion*
@@ -74,6 +75,10 @@ Recent decisions affecting current work:
 - [Phase 02-03]: KYC review creates AdminNotification in same transaction — atomic audit trail
 - [Phase 02-03]: Subscription plan price change resets razorpayPlanId to null — forces lazy re-creation (Razorpay plans immutable)
 - [Phase 02-03]: Category slug collision on rename appends numeric suffix — prevents uniqueness violation
+- [03-01]: Public customer endpoints have no auth guards — storefront API pattern for anonymous browsing
+- [03-01]: Vendor search filters on subscription status ACTIVE or AUTHENTICATED — only paying vendors appear
+- [03-01]: VendorStats caches scoring factors (averageRating, responseRate) — lead routing performance optimization
+- [03-01]: PostGIS enabled via migration prepend — available for ST_DWithin distance queries
 
 ### Pending Todos
 
@@ -90,6 +95,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-06
-Stopped at: Phase 2 verified and complete. Next: Phase 3 (Lead Routing Engine).
+Last session: 2026-03-07
+Stopped at: Completed 03-01-PLAN.md. Next: 03-02-PLAN.md (lead submission and routing).
 Resume file: None
