@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 3 (Lead Routing Engine) — Plan 1 complete, continuing
+**Current focus:** Phase 3 (Lead Routing Engine) — Plan 2 complete, continuing
 
 ## Current Position
 
 Phase: 3 of 7 (Lead Routing Engine) — IN PROGRESS
-Plan: 1 of 3 in current phase
-Status: Plan 03-01 complete. Schema models + customer browsing API deployed.
-Last activity: 2026-03-07 — Plan 03-01 executed (2/2 tasks)
+Plan: 2 of 3 in current phase
+Status: Plan 03-02 complete. Lead inquiry endpoint + scoring engine deployed.
+Last activity: 2026-03-07 — Plan 03-02 executed (2/2 tasks)
 
-Progress: [████░░░░░░] 33% (7/21 plans complete)
+Progress: [████░░░░░░] 38% (8/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 15 min
-- Total execution time: 1.63 hours
+- Total plans completed: 8
+- Average duration: 13 min
+- Total execution time: 1.68 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [████░░░░░░] 33% (7/21 plans complete)
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 75 min | 25 min |
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
-| 03-lead-routing-engine | 1/3 | 5 min | 5 min |
+| 03-lead-routing-engine | 2/3 | 8 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (7 min), 02-01 (13 min), 02-03 (5 min), 03-01 (5 min)
+- Last 5 plans: 01-03 (7 min), 02-01 (13 min), 02-03 (5 min), 03-01 (5 min), 03-02 (3 min)
 - Trend: execution accelerating with established patterns and schema conventions
 
 *Updated after each plan completion*
@@ -79,6 +79,10 @@ Recent decisions affecting current work:
 - [03-01]: Vendor search filters on subscription status ACTIVE or AUTHENTICATED — only paying vendors appear
 - [03-01]: VendorStats caches scoring factors (averageRating, responseRate) — lead routing performance optimization
 - [03-01]: PostGIS enabled via migration prepend — available for ST_DWithin distance queries
+- [03-02]: Consent recorded inline (not via guard) — lead creation needs consentLogId FK link
+- [03-02]: ScoringService locationMatch computed fresh per event — location is event-specific, not vendor-intrinsic
+- [03-02]: Fairness counter uses Redis INCR with 7-day TTL on first increment — atomic and self-expiring
+- [03-02]: CreateInquiryDto validates targetVendorId XOR categoryId at service level — explicit error for both/neither
 
 ### Pending Todos
 
@@ -96,5 +100,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Completed 03-01-PLAN.md. Next: 03-02-PLAN.md (lead submission and routing).
+Stopped at: Completed 03-02-PLAN.md. Next: 03-03-PLAN.md (async routing processor and push notifications).
 Resume file: None
