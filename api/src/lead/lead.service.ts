@@ -1,10 +1,16 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import {
   BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  LEAD_ROUTING_QUEUE,
+  ROUTE_LEAD_JOB,
+} from '../routing/routing.constants';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { LeadResponseDto } from './dto/lead-response.dto';
 
@@ -12,7 +18,10 @@ import { LeadResponseDto } from './dto/lead-response.dto';
 export class LeadService {
   private readonly logger = new Logger(LeadService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue(LEAD_ROUTING_QUEUE) private readonly routingQueue: Queue,
+  ) {}
 
   /**
    * Create a lead inquiry, gated by explicit consent (DPDP Act / PRIV-02).
@@ -111,8 +120,19 @@ export class LeadService {
       },
     });
 
+    // 7. Enqueue async routing job
+    const mode = dto.targetVendorId ? 'A' : 'B';
+    await this.routingQueue.add(
+      ROUTE_LEAD_JOB,
+      { leadId: lead.id, mode },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+      },
+    );
+
     this.logger.log(
-      `Lead created: ${lead.id}, mode=${dto.targetVendorId ? 'A' : 'B'}, city=${dto.city}`,
+      `Lead created: ${lead.id}, mode=${mode}, city=${dto.city} — routing job enqueued`,
     );
 
     return {
