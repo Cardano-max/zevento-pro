@@ -86,3 +86,21 @@ export enum AdminNotificationType {
   KYC_SUBMISSION = 'KYC_SUBMISSION',
   DISPUTE = 'DISPUTE',
 }
+
+// Phase 3: Lead Routing Engine
+
+export enum LeadStatus {
+  PENDING = 'PENDING',
+  ROUTING = 'ROUTING',
+  ROUTED = 'ROUTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum LeadAssignmentStatus {
+  PENDING = 'PENDING',
+  NOTIFIED = 'NOTIFIED',
+  ACCEPTED = 'ACCEPTED',
+  DECLINED = 'DECLINED',
+  EXPIRED = 'EXPIRED',
+}

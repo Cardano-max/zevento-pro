@@ -105,6 +105,30 @@ async function main() {
     console.log(`  Plan: ${result.name} - Rs.${result.amountPaise / 100} (${result.id})`);
   }
 
+  // Create default VendorStats for any existing vendor profiles without stats
+  const vendorsWithoutStats = await prisma.vendorProfile.findMany({
+    where: { stats: null },
+    select: { id: true },
+  });
+
+  for (const vendor of vendorsWithoutStats) {
+    await prisma.vendorStats.upsert({
+      where: { vendorId: vendor.id },
+      update: {},
+      create: {
+        vendorId: vendor.id,
+        averageRating: 3.0,
+        responseRate: 0.5,
+      },
+    });
+  }
+
+  if (vendorsWithoutStats.length > 0) {
+    console.log(
+      `  VendorStats: created defaults for ${vendorsWithoutStats.length} vendor(s)`,
+    );
+  }
+
   console.log('Seed complete.');
 }
 

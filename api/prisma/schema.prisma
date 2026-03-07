@@ -19,6 +19,8 @@ model User {
   roles         UserRole[]
   consentLogs   ConsentLog[]
   vendorProfile VendorProfile?
+  leads         Lead[]         @relation("CustomerLeads")
+  deviceTokens  DeviceToken[]
 
   @@map("users")
 }
@@ -116,6 +118,9 @@ model VendorProfile {
   serviceAreas    VendorServiceArea[]
   kycDocuments    KycDocument[]
   subscription    VendorSubscription?
+  stats           VendorStats?
+  leadAssignments LeadAssignment[]
+  targetedLeads   Lead[]              @relation("TargetedLeads")
 
   @@map("vendor_profiles")
 }
@@ -135,6 +140,7 @@ model EventCategory {
   children    EventCategory[]   @relation("CategoryTree")
   vendors     VendorCategory[]
   photos      PortfolioPhoto[]
+  leads       Lead[]
 
   @@map("event_categories")
 }
@@ -259,4 +265,85 @@ model AdminNotification {
 
   @@index([isRead, createdAt])
   @@map("admin_notifications")
+}
+
+// ──────────────────────────────────────────────────
+// Phase 3: Lead Routing Engine
+// ──────────────────────────────────────────────────
+
+model VendorStats {
+  id                 String        @id @default(uuid()) @db.Uuid
+  vendorId           String        @unique @map("vendor_id") @db.Uuid
+  averageRating      Float         @default(3.0) @map("average_rating")
+  responseRate       Float         @default(0.5) @map("response_rate")
+  totalLeadsReceived Int           @default(0) @map("total_leads_received")
+  totalLeadsWon      Int           @default(0) @map("total_leads_won")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  vendor             VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("vendor_stats")
+}
+
+model Lead {
+  id              String           @id @default(uuid()) @db.Uuid
+  customerId      String           @map("customer_id") @db.Uuid
+  eventType       String           @map("event_type") @db.VarChar(50)
+  eventDate       DateTime         @map("event_date")
+  city            String           @db.VarChar(100)
+  latitude        Float?
+  longitude       Float?
+  budget          Int
+  guestCount      Int              @map("guest_count")
+  targetVendorId  String?          @map("target_vendor_id") @db.Uuid
+  categoryId      String?          @map("category_id") @db.Uuid
+  status          String           @default("PENDING") @db.VarChar(20)
+  consentLogId    String           @map("consent_log_id") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  customer        User             @relation("CustomerLeads", fields: [customerId], references: [id], onDelete: Cascade)
+  targetVendor    VendorProfile?   @relation("TargetedLeads", fields: [targetVendorId], references: [id], onDelete: SetNull)
+  category        EventCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  assignments     LeadAssignment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([categoryId])
+  @@map("leads")
+}
+
+model LeadAssignment {
+  id          String        @id @default(uuid()) @db.Uuid
+  leadId      String        @map("lead_id") @db.Uuid
+  vendorId    String        @map("vendor_id") @db.Uuid
+  score       Float?
+  status      String        @default("PENDING") @db.VarChar(20)
+  notifiedAt  DateTime?     @map("notified_at")
+  respondedAt DateTime?     @map("responded_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  vendor      VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, vendorId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("lead_assignments")
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(255)
+  platform  String   @db.VarChar(20)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
 }
