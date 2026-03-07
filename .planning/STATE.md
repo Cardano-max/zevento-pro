@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 3 (Lead Routing Engine) — Plan 2 complete, continuing
+**Current focus:** Phase 3 (Lead Routing Engine) — COMPLETE. Ready for Phase 4.
 
 ## Current Position
 
-Phase: 3 of 7 (Lead Routing Engine) — IN PROGRESS
-Plan: 2 of 3 in current phase
-Status: Plan 03-02 complete. Lead inquiry endpoint + scoring engine deployed.
-Last activity: 2026-03-07 — Plan 03-02 executed (2/2 tasks)
+Phase: 3 of 7 (Lead Routing Engine) — COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase 03 complete. All 3 plans executed. Lead routing pipeline operational.
+Last activity: 2026-03-07 — Plan 03-03 executed (2/2 tasks)
 
-Progress: [████░░░░░░] 38% (8/21 plans complete)
+Progress: [████░░░░░░] 43% (9/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 13 min
-- Total execution time: 1.68 hours
+- Total plans completed: 9
+- Average duration: 12 min
+- Total execution time: 1.77 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [████░░░░░░] 38% (8/21 plans complete)
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 75 min | 25 min |
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
-| 03-lead-routing-engine | 2/3 | 8 min | 4 min |
+| 03-lead-routing-engine | 3/3 | 13 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (7 min), 02-01 (13 min), 02-03 (5 min), 03-01 (5 min), 03-02 (3 min)
+- Last 5 plans: 02-01 (13 min), 02-03 (5 min), 03-01 (5 min), 03-02 (3 min), 03-03 (5 min)
 - Trend: execution accelerating with established patterns and schema conventions
 
 *Updated after each plan completion*
@@ -83,6 +83,9 @@ Recent decisions affecting current work:
 - [03-02]: ScoringService locationMatch computed fresh per event — location is event-specific, not vendor-intrinsic
 - [03-02]: Fairness counter uses Redis INCR with 7-day TTL on first increment — atomic and self-expiring
 - [03-02]: CreateInquiryDto validates targetVendorId XOR categoryId at service level — explicit error for both/neither
+- [03-03]: BullModule.forRoot parses REDIS_URL into host/port — cannot share ioredis instance (maxRetriesPerRequest must be null for BullMQ workers)
+- [03-03]: Firebase mock mode logs push notifications when env vars missing — consistent with MSG91/Cloudinary/Razorpay dev mock pattern
+- [03-03]: Fairness cap checked at routing time (not scoring time) — keeps scoring pure and separation of concerns clear
 
 ### Pending Todos
 
@@ -100,5 +103,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Completed 03-02-PLAN.md. Next: 03-03-PLAN.md (async routing processor and push notifications).
+Stopped at: Completed 03-03-PLAN.md. Phase 03 (Lead Routing Engine) complete. Next: Phase 04 (Booking Calendar).
 Resume file: None
