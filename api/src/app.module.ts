@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Controller, Get, Module } from '@nestjs/common';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { BookingModule } from './booking/booking.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CustomerModule } from './customer/customer.module';
 import { InboxModule } from './inbox/inbox.module';
@@ -11,6 +12,7 @@ import { NotificationModule } from './notification/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { RedisModule } from './redis/redis.module';
+import { ReviewModule } from './review/review.module';
 import { RoutingModule } from './routing/routing.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { VendorModule } from './vendor/vendor.module';
@@ -65,6 +67,8 @@ function parseBullRedisConnection() {
     RoutingModule,
     InboxModule,
     QuoteModule,
+    BookingModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [],

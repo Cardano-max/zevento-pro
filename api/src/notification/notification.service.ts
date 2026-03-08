@@ -137,6 +137,59 @@ export class NotificationService implements OnModuleInit {
   }
 
   /**
+   * Send a push notification to all active devices of a customer.
+   * Mirrors sendPushToVendor but accepts customerId directly (no vendor→userId lookup).
+   * In mock mode, logs the notification instead of sending via Firebase.
+   */
+  async sendPushToCustomer(
+    customerId: string,
+    payload: { title: string; body: string; data: Record<string, string> },
+  ): Promise<void> {
+    const devices = await this.prisma.deviceToken.findMany({
+      where: { userId: customerId, isActive: true },
+    });
+
+    if (devices.length === 0) {
+      this.logger.debug(
+        `No active device tokens for customer ${customerId} — skipping push`,
+      );
+      return;
+    }
+
+    if (this.mockMode) {
+      this.logger.log(
+        `[MOCK PUSH] Customer ${customerId}: ${payload.title} — ${payload.body} — ${devices.length} device(s)`,
+      );
+      return;
+    }
+
+    for (const device of devices) {
+      try {
+        await admin.messaging().send({
+          token: device.token,
+          notification: { title: payload.title, body: payload.body },
+          data: payload.data,
+        });
+      } catch (error: any) {
+        const code = error?.code ?? error?.errorInfo?.code ?? '';
+        if (
+          code === 'messaging/invalid-registration-token' ||
+          code === 'messaging/registration-token-not-registered'
+        ) {
+          await this.prisma.deviceToken.update({
+            where: { id: device.id },
+            data: { isActive: false },
+          });
+        } else {
+          this.logger.error(
+            `FCM send failed for device ${device.id}: ${error.message}`,
+          );
+        }
+      }
+    }
+  }
+
+  /**
    * Send push notifications to multiple vendors.
    * Uses Promise.allSettled to avoid failing the whole batch if one push fails.
    */
