@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 3 (Lead Routing Engine) — COMPLETE. Ready for Phase 4.
+**Current focus:** Phase 4 (Vendor CRM and Booking Flow) — IN PROGRESS. Plan 04-01 complete.
 
 ## Current Position
 
-Phase: 3 of 7 (Lead Routing Engine) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase 03 complete and verified (5/5 must-haves). Lead routing pipeline operational.
-Last activity: 2026-03-07 — Phase 3 verified, ready for Phase 4
+Phase: 4 of 7 (Vendor CRM and Booking Flow) — IN PROGRESS
+Plan: 1 of 3 in current phase (04-01 complete)
+Status: Plan 04-01 complete — InboxModule with Socket.IO gateway, Phase 4 schema applied. Ready for 04-02.
+Last activity: 2026-03-08 — Phase 4 Plan 01 complete
 
-Progress: [████░░░░░░] 43% (9/21 plans complete)
+Progress: [████░░░░░░] 48% (10/21 plans complete)
 
 ## Performance Metrics
 
@@ -30,10 +30,11 @@ Progress: [████░░░░░░] 43% (9/21 plans complete)
 | 01-foundation | 3/3 | 75 min | 25 min |
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
 | 03-lead-routing-engine | 3/3 | 13 min | 4 min |
+| 04-vendor-crm-and-booking-flow | 1/3 | 13 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (13 min), 02-03 (5 min), 03-01 (5 min), 03-02 (3 min), 03-03 (5 min)
-- Trend: execution accelerating with established patterns and schema conventions
+- Last 5 plans: 03-01 (5 min), 03-02 (3 min), 03-03 (5 min), 04-01 (13 min)
+- Trend: Phase 4 slightly longer due to Socket.IO setup and schema migration complexity
 
 *Updated after each plan completion*
 
@@ -86,6 +87,11 @@ Recent decisions affecting current work:
 - [03-03]: BullModule.forRoot parses REDIS_URL into host/port — cannot share ioredis instance (maxRetriesPerRequest must be null for BullMQ workers)
 - [03-03]: Firebase mock mode logs push notifications when env vars missing — consistent with MSG91/Cloudinary/Razorpay dev mock pattern
 - [03-03]: Fairness cap checked at routing time (not scoring time) — keeps scoring pure and separation of concerns clear
+- [04-01]: Socket.IO JWT auth in afterInit middleware — never in handleConnection to prevent NestJS crash (issue #2028)
+- [04-01]: db push used for Phase 4 migration (existing migration was modified; migrate reset blocked by Prisma AI safety gate); migration SQL created manually and marked applied
+- [04-01]: Booking.leadId @unique added (Prisma requires unique FK for one-to-one Lead.booking? relation)
+- [04-01]: Redis scoring cache invalidated outside $transaction to avoid long-running TX (pitfall 4)
+- [04-01]: @nestjs/websockets pinned to v10.x (not v11.x) to match @nestjs/common@10.x peer dependency
 
 ### Pending Todos
 
@@ -102,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07
-Stopped at: Phase 3 complete and verified (5/5). Next: Phase 4 (Vendor CRM and Booking Flow).
+Last session: 2026-03-08
+Stopped at: Completed 04-01-PLAN.md — InboxModule with Socket.IO gateway and Phase 4 schema complete. Next: 04-02 (Quote builder).
 Resume file: None
