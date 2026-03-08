@@ -6,6 +6,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CustomerModule } from './customer/customer.module';
 import { InboxModule } from './inbox/inbox.module';
 import { LeadModule } from './lead/lead.module';
+import { QuoteModule } from './quote/quote.module';
 import { NotificationModule } from './notification/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrivacyModule } from './privacy/privacy.module';
@@ -63,6 +64,7 @@ function parseBullRedisConnection() {
     NotificationModule,
     RoutingModule,
     InboxModule,
+    QuoteModule,
   ],
   controllers: [AppController],
   providers: [],
