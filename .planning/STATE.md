@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 4 (Vendor CRM and Booking Flow) — IN PROGRESS. Plan 04-01 complete.
+**Current focus:** Phase 4 (Vendor CRM and Booking Flow) — IN PROGRESS. Plan 04-02 complete.
 
 ## Current Position
 
 Phase: 4 of 7 (Vendor CRM and Booking Flow) — IN PROGRESS
-Plan: 1 of 3 in current phase (04-01 complete)
-Status: Plan 04-01 complete — InboxModule with Socket.IO gateway, Phase 4 schema applied. Ready for 04-02.
-Last activity: 2026-03-08 — Phase 4 Plan 01 complete
+Plan: 2 of 3 in current phase (04-02 complete)
+Status: Plan 04-02 complete — QuoteModule with state machine, BullMQ expiry, and Booking creation on accept. Ready for 04-03.
+Last activity: 2026-03-08 — Phase 4 Plan 02 complete
 
-Progress: [████░░░░░░] 48% (10/21 plans complete)
+Progress: [█████░░░░░] 52% (11/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 11
 - Average duration: 12 min
-- Total execution time: 1.77 hours
+- Total execution time: 2.11 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [████░░░░░░] 48% (10/21 plans complete)
 | 01-foundation | 3/3 | 75 min | 25 min |
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
 | 03-lead-routing-engine | 3/3 | 13 min | 4 min |
-| 04-vendor-crm-and-booking-flow | 1/3 | 13 min | 13 min |
+| 04-vendor-crm-and-booking-flow | 2/3 | 27 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (5 min), 03-02 (3 min), 03-03 (5 min), 04-01 (13 min)
-- Trend: Phase 4 slightly longer due to Socket.IO setup and schema migration complexity
+- Last 5 plans: 03-02 (3 min), 03-03 (5 min), 04-01 (13 min), 04-02 (14 min)
+- Trend: Phase 4 consistent at ~13 min — quote state machine and Prisma $transaction patterns are well-established
 
 *Updated after each plan completion*
 
@@ -92,6 +92,10 @@ Recent decisions affecting current work:
 - [04-01]: Booking.leadId @unique added (Prisma requires unique FK for one-to-one Lead.booking? relation)
 - [04-01]: Redis scoring cache invalidated outside $transaction to avoid long-running TX (pitfall 4)
 - [04-01]: @nestjs/websockets pinned to v10.x (not v11.x) to match @nestjs/common@10.x peer dependency
+- [04-02]: totalPaise computed server-side from lineItems (not accepted from client) — prevents price manipulation
+- [04-02]: VendorStats.totalLeadsWon incremented outside $transaction — consistent with pitfall 4 (Redis cache) pattern from 04-01
+- [04-02]: QuoteController uses @Controller() with full paths — avoids nested controller routing complexity
+- [04-02]: submitQuote checks submittedCount excluding current quote (post-transition) — correct QUOTES_RECEIVED detection
 
 ### Pending Todos
 
@@ -109,5 +113,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Completed 04-01-PLAN.md — InboxModule with Socket.IO gateway and Phase 4 schema complete. Next: 04-02 (Quote builder).
+Stopped at: Completed 04-02-PLAN.md — QuoteModule with state machine, BullMQ expiry, and Booking creation complete. Next: 04-03 (Booking lifecycle + reviews).
 Resume file: None
