@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InboxGateway } from '../inbox/inbox.gateway';
+import { ScoringService } from '../lead/scoring.service';
 import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ScoringService } from '../lead/scoring.service';
 import { RedisService } from '../redis/redis.service';
 import {
   FAIRNESS_WINDOW_SECONDS,
@@ -18,6 +19,7 @@ export class RoutingService {
     private readonly scoringService: ScoringService,
     private readonly notificationService: NotificationService,
     private readonly redis: RedisService,
+    private readonly inboxGateway: InboxGateway,
   ) {}
 
   /**
@@ -60,6 +62,17 @@ export class RoutingService {
     await this.prisma.leadAssignment.update({
       where: { id: assignment.id },
       data: { notifiedAt: new Date(), status: 'NOTIFIED' },
+    });
+
+    // Emit real-time Socket.IO event to vendor's personal room
+    // IMPORTANT: customer phone is NOT included — only revealed after vendor accepts via acceptLead
+    this.inboxGateway.emitToVendor(vendorId, 'new_lead', {
+      assignmentId: assignment.id,
+      leadId,
+      eventType: lead.eventType,
+      city: lead.city,
+      budget: lead.budget,
+      eventDate: lead.eventDate,
     });
 
     // Send push notification
@@ -164,15 +177,34 @@ export class RoutingService {
       data: { status: 'ROUTED' },
     });
 
-    // Increment fairness counters, mark as notified
+    // Increment fairness counters, mark as notified, emit real-time events
     const assignedVendorIds: string[] = [];
     for (const entry of selected) {
       await this.incrementFairness(entry.vendorId);
+
+      // Fetch assignment id for the emitToVendor payload
+      const assignment = await this.prisma.leadAssignment.findFirst({
+        where: { leadId, vendorId: entry.vendorId },
+        select: { id: true },
+      });
 
       await this.prisma.leadAssignment.updateMany({
         where: { leadId, vendorId: entry.vendorId },
         data: { notifiedAt: new Date(), status: 'NOTIFIED' },
       });
+
+      // Emit real-time Socket.IO event to each assigned vendor's personal room
+      // IMPORTANT: customer phone is NOT included — only revealed after vendor accepts via acceptLead
+      if (assignment) {
+        this.inboxGateway.emitToVendor(entry.vendorId, 'new_lead', {
+          assignmentId: assignment.id,
+          leadId,
+          eventType: lead.eventType,
+          city: lead.city,
+          budget: lead.budget,
+          eventDate: lead.eventDate,
+        });
+      }
 
       assignedVendorIds.push(entry.vendorId);
     }
