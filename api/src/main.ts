@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -16,6 +17,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
+
+  // Register IoAdapter for Socket.IO — shares HTTP port (no separate port)
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Enable global validation pipe
   app.useGlobalPipes(
