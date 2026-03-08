@@ -89,12 +89,12 @@ Plans:
   3. Customer can accept one quote, which confirms the booking and transitions the status from Quoted to Booked — both parties see the updated status
   4. Booking status progresses through observable stages (Inquiry > Quotes Received > Booked > Completed) with push notifications to the customer at each transition
   5. After a booking is marked Completed, the customer can leave a verified review; the vendor can respond to the review publicly; unverified reviews from non-bookers are not accepted
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Vendor lead inbox — real-time Socket.IO feed, accept/decline with reason, contact reveal gate (post-accept), lead dashboard with quote status
-- [ ] 04-02: Quote builder and booking confirmation — line-item quote form, validity period, customer quote comparison view, quote acceptance → booking state machine
-- [ ] 04-03: Booking calendar, status timeline, reviews — vendor date blocking, booking status pipeline with NOTF-02 push, post-completion review invite, vendor review response, vendor earnings dashboard (leads received, leads won, earnings, ROI)
+- [ ] 04-01-PLAN.md — Vendor lead inbox: Socket.IO InboxGateway (JWT middleware in afterInit), accept/decline with contact reveal gate, all Phase 4 Prisma schema additions, IoAdapter in main.ts
+- [ ] 04-02-PLAN.md — Quote builder: DRAFT→SUBMITTED state machine, BullMQ quote expiry, customer comparison view, quote acceptance → Booking creation in $transaction
+- [ ] 04-03-PLAN.md — Booking status pipeline (BOOKED→IN_PROGRESS→COMPLETED), customer push notifications (NOTF-02), verified reviews, vendor response, vendor earnings dashboard, RoutingService wired to InboxGateway
 
 ---
 
@@ -160,7 +160,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Foundation | 3/3 | Complete | 2026-03-05 |
 | 2. Vendor Onboarding and Subscriptions | 3/3 | Complete | 2026-03-06 |
 | 3. Lead Routing Engine | 3/3 | Complete | 2026-03-07 |
-| 4. Vendor CRM and Booking Flow | 0/3 | Not started | - |
+| 4. Vendor CRM and Booking Flow | 0/3 | Planned | - |
 | 5. Payments and Commission Settlement | 0/3 | Not started | - |
 | 6. B2B Product Marketplace | 0/3 | Not started | - |
 | 7. Analytics and Admin Hardening | 0/2 | Not started | - |
