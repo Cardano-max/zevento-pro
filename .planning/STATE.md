@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 6 (B2B Product Marketplace) COMPLETE. All 3 plans done: ProductModule (06-01), OrderModule with payment (06-02), order lifecycle state machine (06-03). Phase 7 next.
+**Current focus:** Phase 7 (Analytics and Admin Hardening) in progress. Plan 01 done: analytics dashboard endpoint. Plan 02 next.
 
 ## Current Position
 
-Phase: 6 of 7 (B2B Product Marketplace) -- COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase 06 Plan 03 complete — Order lifecycle state machine (PENDING→CONFIRMED→DISPATCHED→DELIVERED), TOCTOU-safe atomic transitions, stock restore on cancel, push notifications. Phase 6 fully done.
-Last activity: 2026-03-13 — Phase 6 Plan 03 complete
+Phase: 7 of 7 (Analytics and Admin Hardening)
+Plan: 1 of 2 in current phase -- COMPLETE
+Status: Phase 07 Plan 01 complete — Live analytics dashboard endpoint with leadsPerCity, conversionFunnel, revenueByStream, activeVendorCount via Prisma groupBy + Promise.all.
+Last activity: 2026-03-13 — Phase 7 Plan 01 complete
 
-Progress: [████████░░] 81% (17/21 plans complete)
+Progress: [█████████░] 86% (18/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 10 min
-- Total execution time: 2.54 hours
+- Total execution time: 2.57 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [████████░░] 81% (17/21 plans complete)
 | 04-vendor-crm-and-booking-flow | 3/3 | 39 min | 13 min |
 | 05-payments-and-commission-settlement | 3/3 | 15 min | 5 min |
 | 06-b2b-product-marketplace | 3/3 | ~32 min | ~11 min |
+| 07-analytics-and-admin-hardening | 1/2 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (5 min), 05-03 (5 min), 06-01 (20 min), 06-02 (8 min), 06-03 (3 min)
-- Trend: Phase 6 Plans 02-03 at 8 and 3 min — state machine pattern from Phase 4 carried over cleanly
+- Last 5 plans: 05-03 (5 min), 06-01 (20 min), 06-02 (8 min), 06-03 (3 min), 07-01 (2 min)
+- Trend: Analytics dashboard plan extremely fast — groupBy queries over existing schema, no migrations needed
 
 *Updated after each plan completion*
 
@@ -124,6 +125,8 @@ Recent decisions affecting current work:
 - [06-02]: Payment failure for MARKETPLACE_SALE restores stock atomically via $transaction before setting paymentStatus FAILED
 - [Phase 06-03]: [06-03]: cancelOrder delegates to transitionOrderStatus internally — single state machine, no duplication
 - [Phase 06-03]: [06-03]: Stock restore inside same $transaction as updateMany — prevents stock leak on mid-transaction failure
+- [07-01]: FUNNEL_ORDER defined as static readonly on AdminService — single source of truth for 8-stage conversion funnel ordering
+- [07-01]: activeVendorCount filters subscription status IN ['ACTIVE','AUTHENTICATED'] — consistent with vendor search visibility pattern from Phase 3
 
 ### Pending Todos
 
@@ -141,5 +144,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Completed 06-03-PLAN.md — Order lifecycle state machine with PENDING→CONFIRMED→DISPATCHED→DELIVERED transitions, TOCTOU-safe atomic updateMany, stock restore on CANCELLED, push notifications. Phase 6 complete. Phase 7 next.
+Stopped at: Completed 07-01-PLAN.md — Analytics dashboard endpoint with leadsPerCity, conversionFunnel, revenueByStream, activeVendorCount. Plan 07-02 next.
 Resume file: None
