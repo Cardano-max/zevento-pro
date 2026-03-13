@@ -112,6 +112,86 @@ export class PaymentService {
   }
 
   /**
+   * Create a Razorpay order for a pending ProductOrder (B2B marketplace checkout).
+   *
+   * 1. Find ProductOrder and verify ownership + status
+   * 2. Lock commission rate at order creation time (null categoryId for product orders — Pitfall 3)
+   * 3. Create Razorpay order with notes.type='MARKETPLACE_SALE' for webhook routing
+   * 4. Update ProductOrder with razorpayOrderId and locked commissionRateBps
+   * 5. Return order details for client Razorpay Checkout
+   */
+  async createProductOrderPayment(orderId: string, userId: string) {
+    const order = await this.prisma.productOrder.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Product order not found');
+    }
+
+    if (order.buyerId !== userId) {
+      throw new NotFoundException('Product order not found');
+    }
+
+    if (order.status !== 'PENDING') {
+      throw new BadRequestException(
+        'Only PENDING orders can be paid for',
+      );
+    }
+
+    // Allow retry if payment failed; block if already initiated and not failed
+    if (
+      order.razorpayOrderId &&
+      order.paymentStatus !== 'FAILED'
+    ) {
+      throw new BadRequestException('Payment already initiated for this order');
+    }
+
+    // Lock commission rate: null categoryId for product orders (Pitfall 3 — ProductCategory is
+    // separate from EventCategory; specificity cascade will find role-level or global default)
+    const commissionRateBps = await this.commissionService.getRate(
+      order.vendorId,
+      null,
+    );
+
+    // Create Razorpay order with MARKETPLACE_SALE notes for webhook routing
+    const razorpayOrder = await this.razorpayService.createOrder({
+      amount: order.totalPaise,
+      currency: 'INR',
+      receipt: `po_${order.id.substring(0, 30)}`,
+      notes: {
+        productOrderId: order.id,
+        vendorId: order.vendorId,
+        customerId: order.buyerId,
+        type: 'MARKETPLACE_SALE',
+        commissionRateBps: String(commissionRateBps),
+      },
+    });
+
+    // Store Razorpay order reference and locked commission rate
+    await this.prisma.productOrder.update({
+      where: { id: orderId },
+      data: {
+        razorpayOrderId: razorpayOrder.id,
+        paymentStatus: 'PENDING',
+        commissionRateBps,
+      },
+    });
+
+    this.logger.log(
+      `Product order Razorpay order created: orderId=${razorpayOrder.id}, productOrderId=${orderId}, amount=${razorpayOrder.amount}, commissionBps=${commissionRateBps}`,
+    );
+
+    return {
+      orderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: 'INR',
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock',
+    };
+  }
+
+  /**
    * Verify Razorpay payment signature from client callback.
    *
    * This is an optimistic update for immediate UX feedback.

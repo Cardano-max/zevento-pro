@@ -16,6 +16,7 @@ import { PayoutService } from './payout.service';
     BullModule.registerQueue(
       { name: 'payment-processing' },
       { name: 'vendor-payout' },
+      { name: 'product-order-payment' },
     ),
   ],
   controllers: [PaymentController, PaymentWebhookController],

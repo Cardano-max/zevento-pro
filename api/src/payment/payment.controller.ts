@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateProductOrderPaymentDto } from './dto/create-product-order-payment.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { PaymentService } from './payment.service';
 
@@ -39,6 +40,22 @@ export class PaymentController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.paymentService.createBookingOrder(dto.bookingId, user.userId);
+  }
+
+  /**
+   * POST /payments/product-orders
+   * Create a Razorpay order for a pending ProductOrder (B2B marketplace checkout).
+   * Returns orderId, amount, currency, and keyId for client Razorpay Checkout.
+   * notes.type='MARKETPLACE_SALE' ensures correct webhook routing.
+   */
+  @Post('product-orders')
+  @Roles('PLANNER', 'CUSTOMER')
+  @HttpCode(HttpStatus.CREATED)
+  createProductOrderPayment(
+    @Body() dto: CreateProductOrderPaymentDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.paymentService.createProductOrderPayment(dto.orderId, user.userId);
   }
 
   /**

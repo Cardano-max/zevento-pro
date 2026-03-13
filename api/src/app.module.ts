@@ -9,6 +9,7 @@ import { InboxModule } from './inbox/inbox.module';
 import { LeadModule } from './lead/lead.module';
 import { QuoteModule } from './quote/quote.module';
 import { NotificationModule } from './notification/notification.module';
+import { OrderModule } from './order/order.module';
 import { PaymentModule } from './payment/payment.module';
 import { ProductModule } from './product/product.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -73,6 +74,7 @@ function parseBullRedisConnection() {
     ReviewModule,
     PaymentModule,
     ProductModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [],
