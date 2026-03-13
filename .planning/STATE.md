@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 5 (Payments and Commission Settlement) complete. All 3 plans delivered: payment orders, webhook processing, commission calculation, RazorpayX payouts, and admin payment management.
+**Current focus:** Phase 6 (B2B Product Marketplace) in progress. Plan 02 complete: B2B order placement, atomic stock reservation, Razorpay checkout with MARKETPLACE_SALE notes, webhook routing by notes.type, and OrderPaymentProcessor.
 
 ## Current Position
 
-Phase: 5 of 7 (Payments and Commission Settlement) -- COMPLETE
-Plan: 3 of 3 in current phase (phase complete)
-Status: Phase 05 complete — Payment transaction log, refund initiation, commission rate CRUD, and reconciliation dashboard. Ready for Phase 6 (B2B Product Marketplace).
-Last activity: 2026-03-13 — Phase 5 Plan 03 complete
+Phase: 6 of 7 (B2B Product Marketplace) -- IN PROGRESS
+Plan: 2 of 3 in current phase
+Status: Phase 06 Plan 02 complete — OrderModule with atomic stock reservation, Razorpay product checkout, MARKETPLACE_SALE webhook routing, OrderPaymentProcessor for commission settlement. Plan 03 next.
+Last activity: 2026-03-13 — Phase 6 Plan 02 complete
 
-Progress: [███████░░░] 71% (15/21 plans complete)
+Progress: [███████░░░] 76% (16/21 plans complete)
 
 ## Performance Metrics
 
@@ -32,6 +32,7 @@ Progress: [███████░░░] 71% (15/21 plans complete)
 | 03-lead-routing-engine | 3/3 | 13 min | 4 min |
 | 04-vendor-crm-and-booking-flow | 3/3 | 39 min | 13 min |
 | 05-payments-and-commission-settlement | 3/3 | 15 min | 5 min |
+| 06-b2b-product-marketplace | 2/3 | ~29 min | ~15 min |
 
 **Recent Trend:**
 - Last 5 plans: 04-03 (12 min), 05-01 (5 min), 05-02 (5 min), 05-03 (5 min)
@@ -114,6 +115,13 @@ Recent decisions affecting current work:
 - [05-03]: Refund limited to BOOKING_COMMISSION transactions only — subscription refunds handled separately via Razorpay subscription cancellation
 - [05-03]: Commission rate deletion is soft-delete (effectiveTo = now) — rates may be referenced by locked booking commissions
 - [05-03]: Payment log vendor filter uses OR across booking.vendorId and vendorSubscription.vendorId — covers all revenue streams
+- [06-01]: UpdateProductDto uses explicit optional fields (not PartialType) — @nestjs/mapped-types not installed in this project
+- [06-01]: Cloudinary cascade delete on product — loop images, delete each from Cloudinary, then Prisma onDelete: Cascade handles DB records
+- [06-01]: CatalogController is public (no class-level auth) — browse endpoints need no auth
+- [06-02]: Stock decrement is atomic in Prisma $transaction; low-stock BullMQ alerts enqueued outside (Pitfall 4)
+- [06-02]: Commission rate uses getRate(vendorId, null) for product orders — ProductCategory is separate from EventCategory (Pitfall 3)
+- [06-02]: Webhook routes by notes.type — MARKETPLACE_SALE to product-order-payment queue; default to payment-processing (backward-compatible)
+- [06-02]: Payment failure for MARKETPLACE_SALE restores stock atomically via $transaction before setting paymentStatus FAILED
 
 ### Pending Todos
 
@@ -131,5 +139,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Completed 05-03-PLAN.md — Admin payment log, refund initiation, commission rate CRUD, reconciliation. Phase 5 complete. Ready for Phase 6 (B2B Product Marketplace).
+Stopped at: Completed 06-02-PLAN.md — OrderModule with atomic stock reservation, Razorpay product checkout, MARKETPLACE_SALE webhook routing, OrderPaymentProcessor. Phase 6 Plan 03 next.
 Resume file: None
