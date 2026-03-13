@@ -127,6 +127,10 @@ model VendorProfile {
   bookings        Booking[]
   blockedDates    BlockedDate[]
   reviews         Review[]
+  // Phase 5: bank account fields for payout
+  bankAccountName   String?  @map("bank_account_name") @db.VarChar(200)
+  bankAccountNumber String?  @map("bank_account_number") @db.VarChar(30)
+  bankIfsc          String?  @map("bank_ifsc") @db.VarChar(11)
 
   @@map("vendor_profiles")
 }
@@ -144,9 +148,10 @@ model EventCategory {
 
   parent      EventCategory?    @relation("CategoryTree", fields: [parentId], references: [id])
   children    EventCategory[]   @relation("CategoryTree")
-  vendors     VendorCategory[]
-  photos      PortfolioPhoto[]
-  leads       Lead[]
+  vendors          VendorCategory[]
+  photos           PortfolioPhoto[]
+  leads            Lead[]
+  commissionRates  CommissionRate[]
 
   @@map("event_categories")
 }
@@ -245,18 +250,29 @@ model VendorSubscription {
 }
 
 model Transaction {
-  id                   String             @id @default(uuid()) @db.Uuid
-  vendorSubscriptionId String             @map("vendor_subscription_id") @db.Uuid
-  type                 String             @default("SUBSCRIPTION") @db.VarChar(20)
-  amountPaise          Int                @map("amount_paise")
-  razorpayPaymentId    String?            @unique @map("razorpay_payment_id") @db.VarChar(50)
-  status               String             @db.VarChar(20)
-  paidAt               DateTime?          @map("paid_at")
-  createdAt            DateTime           @default(now()) @map("created_at")
+  id                   String              @id @default(uuid()) @db.Uuid
+  vendorSubscriptionId String?             @map("vendor_subscription_id") @db.Uuid
+  bookingId            String?             @map("booking_id") @db.Uuid
+  type                 String              @default("SUBSCRIPTION") @db.VarChar(30)
+  amountPaise          Int                 @map("amount_paise")
+  commissionPaise      Int?                @map("commission_paise")
+  netPayoutPaise       Int?                @map("net_payout_paise")
+  razorpayPaymentId    String?             @unique @map("razorpay_payment_id") @db.VarChar(50)
+  razorpayOrderId      String?             @map("razorpay_order_id") @db.VarChar(50)
+  razorpayPayoutId     String?             @map("razorpay_payout_id") @db.VarChar(50)
+  payoutStatus         String?             @map("payout_status") @db.VarChar(20)
+  status               String              @db.VarChar(20)
+  paidAt               DateTime?           @map("paid_at")
+  createdAt            DateTime            @default(now()) @map("created_at")
 
-  vendorSubscription   VendorSubscription @relation(fields: [vendorSubscriptionId], references: [id], onDelete: Cascade)
+  vendorSubscription   VendorSubscription? @relation(fields: [vendorSubscriptionId], references: [id], onDelete: SetNull)
+  booking              Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@index([vendorSubscriptionId])
+  @@index([bookingId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
   @@map("transactions")
 }
 
@@ -400,26 +416,31 @@ model QuoteLineItem {
 }
 
 model Booking {
-  id               String                 @id @default(uuid()) @db.Uuid
-  leadId           String                 @unique @map("lead_id") @db.Uuid
-  quoteId          String                 @unique @map("quote_id") @db.Uuid
-  customerId       String                 @map("customer_id") @db.Uuid
-  vendorId         String                 @map("vendor_id") @db.Uuid
+  id                String                 @id @default(uuid()) @db.Uuid
+  leadId            String                 @unique @map("lead_id") @db.Uuid
+  quoteId           String                 @unique @map("quote_id") @db.Uuid
+  customerId        String                 @map("customer_id") @db.Uuid
+  vendorId          String                 @map("vendor_id") @db.Uuid
   // status: BOOKED | IN_PROGRESS | COMPLETED | CANCELLED
-  status           String                 @default("BOOKED") @db.VarChar(20)
-  confirmedAt      DateTime               @default(now()) @map("confirmed_at")
-  completedAt      DateTime?              @map("completed_at")
-  cancelledAt      DateTime?              @map("cancelled_at")
-  cancellationNote String?                @map("cancellation_note") @db.Text
-  createdAt        DateTime               @default(now()) @map("created_at")
-  updatedAt        DateTime               @updatedAt @map("updated_at")
+  status            String                 @default("BOOKED") @db.VarChar(20)
+  confirmedAt       DateTime               @default(now()) @map("confirmed_at")
+  completedAt       DateTime?              @map("completed_at")
+  cancelledAt       DateTime?              @map("cancelled_at")
+  cancellationNote  String?                @map("cancellation_note") @db.Text
+  // Phase 5: payment tracking fields
+  razorpayOrderId   String?                @map("razorpay_order_id") @db.VarChar(50)
+  paymentStatus     String?                @map("payment_status") @db.VarChar(20)
+  commissionRateBps Int?                   @map("commission_rate_bps")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
 
-  lead             Lead                   @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  quote            Quote                  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  customer         User                   @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
-  vendor           VendorProfile          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  statusHistory    BookingStatusHistory[]
-  review           Review?
+  lead              Lead                   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quote             Quote                  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  customer          User                   @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor            VendorProfile          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  statusHistory     BookingStatusHistory[]
+  transactions      Transaction[]
+  review            Review?
 
   @@index([customerId])
   @@index([vendorId])
@@ -474,4 +495,23 @@ model BlockedDate {
   @@unique([vendorId, date])
   @@index([vendorId])
   @@map("blocked_dates")
+}
+
+// ──────────────────────────────────────────────────
+// Phase 5: Payments and Commission Settlement
+// ──────────────────────────────────────────────────
+
+model CommissionRate {
+  id            String         @id @default(uuid()) @db.Uuid
+  categoryId    String?        @map("category_id") @db.Uuid
+  vendorRole    String?        @map("vendor_role") @db.VarChar(20)
+  rateBps       Int            @map("rate_bps")
+  effectiveFrom DateTime       @default(now()) @map("effective_from")
+  effectiveTo   DateTime?      @map("effective_to")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  category      EventCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([categoryId, vendorRole])
+  @@map("commission_rates")
 }

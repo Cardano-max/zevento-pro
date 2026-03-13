@@ -104,3 +104,22 @@ export enum LeadAssignmentStatus {
   DECLINED = 'DECLINED',
   EXPIRED = 'EXPIRED',
 }
+
+// Phase 5: Payments and Commission Settlement
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  CAPTURED = 'CAPTURED',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+}
+
+export enum PayoutStatus {
+  PENDING = 'PENDING',
+  QUEUED = 'QUEUED',
+  PROCESSING = 'PROCESSING',
+  PROCESSED = 'PROCESSED',
+  REVERSED = 'REVERSED',
+  FAILED = 'FAILED',
+  PENDING_BANK_DETAILS = 'PENDING_BANK_DETAILS',
+}
