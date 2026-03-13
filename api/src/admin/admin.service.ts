@@ -14,6 +14,7 @@ import {
   UpdateCommissionRateDto,
 } from './dto/manage-commission.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 import { KycAction, ReviewKycDto } from './dto/review-kyc.dto';
 
 @Injectable()
@@ -853,5 +854,79 @@ export class AdminService {
         category: { select: { id: true, name: true } },
       },
     });
+  }
+
+  // ──────────────────────────────────────────────────
+  // Analytics Dashboard (Phase 7)
+  // ──────────────────────────────────────────────────
+
+  private static readonly FUNNEL_ORDER = [
+    'PENDING',
+    'ROUTING',
+    'ROUTED',
+    'NOTIFIED',
+    'QUOTES_RECEIVED',
+    'BOOKED',
+    'COMPLETED',
+    'CANCELLED',
+  ] as const;
+
+  async getAnalyticsDashboard(query: AnalyticsQueryDto) {
+    const since = query.dateFrom
+      ? new Date(query.dateFrom)
+      : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const until = query.dateTo ? new Date(query.dateTo) : new Date();
+
+    const [leadsPerCityRaw, funnelRaw, revenueRaw, activeVendorCount] =
+      await Promise.all([
+        this.prisma.lead.groupBy({
+          by: ['city'],
+          _count: { id: true },
+          where: { createdAt: { gte: since, lte: until } },
+          orderBy: { _count: { id: 'desc' } },
+        }),
+        this.prisma.lead.groupBy({
+          by: ['status'],
+          _count: { id: true },
+          where: { createdAt: { gte: since, lte: until } },
+        }),
+        this.prisma.transaction.groupBy({
+          by: ['type'],
+          _sum: { amountPaise: true, commissionPaise: true },
+          _count: { id: true },
+          where: { status: 'PAID', createdAt: { gte: since, lte: until } },
+        }),
+        this.prisma.vendorProfile.count({
+          where: {
+            status: 'APPROVED',
+            subscription: { status: { in: ['ACTIVE', 'AUTHENTICATED'] } },
+          },
+        }),
+      ]);
+
+    const funnelMap = new Map(
+      funnelRaw.map((r) => [r.status, r._count.id]),
+    );
+    const conversionFunnel = AdminService.FUNNEL_ORDER.map((status) => ({
+      status,
+      count: funnelMap.get(status) ?? 0,
+    }));
+
+    const revenueByStream = revenueRaw.map((r) => ({
+      type: r.type,
+      count: r._count.id,
+      totalAmountPaise: r._sum.amountPaise ?? 0,
+    }));
+
+    return {
+      window: { from: since, to: until },
+      leadsPerCity: leadsPerCityRaw.map((r) => ({
+        city: r.city,
+        count: r._count.id,
+      })),
+      conversionFunnel,
+      revenueByStream,
+      activeVendorCount,
+    };
   }
 }
