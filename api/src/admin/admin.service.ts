@@ -6,13 +6,18 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { RazorpayService } from '../subscription/razorpay.service';
+import { InitiateRefundDto } from './dto/initiate-refund.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { KycAction, ReviewKycDto } from './dto/review-kyc.dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly razorpayService: RazorpayService,
+  ) {}
 
   async assignRole(
     userId: string,
@@ -586,5 +591,170 @@ export class AdminService {
     });
 
     return { unreadCount: count };
+  }
+
+  // ──────────────────────────────────────────────────
+  // Payment Management (Phase 5)
+  // ──────────────────────────────────────────────────
+
+  async getPaymentLog(
+    page = 1,
+    limit = 20,
+    filters: {
+      dateFrom?: string;
+      dateTo?: string;
+      vendorId?: string;
+      type?: string;
+    },
+  ) {
+    const skip = (page - 1) * limit;
+    const where: any = {};
+
+    if (filters.type) {
+      where.type = filters.type;
+    }
+
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) where.createdAt.lte = new Date(filters.dateTo);
+    }
+
+    if (filters.vendorId) {
+      where.OR = [
+        { booking: { vendorId: filters.vendorId } },
+        { vendorSubscription: { vendorId: filters.vendorId } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          booking: {
+            select: {
+              id: true,
+              vendor: {
+                select: { id: true, businessName: true },
+              },
+              customer: {
+                select: { id: true, name: true, phone: true },
+              },
+            },
+          },
+          vendorSubscription: {
+            select: {
+              vendor: {
+                select: { id: true, businessName: true },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.transaction.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async initiateRefund(dto: InitiateRefundDto) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: dto.transactionId },
+      include: { booking: true },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException(
+        `Transaction ${dto.transactionId} not found`,
+      );
+    }
+
+    if (transaction.type !== 'BOOKING_COMMISSION') {
+      throw new BadRequestException(
+        `Transaction type is ${transaction.type}, only BOOKING_COMMISSION can be refunded`,
+      );
+    }
+
+    if (transaction.status !== 'PAID') {
+      throw new BadRequestException(
+        `Transaction status is ${transaction.status}, expected PAID`,
+      );
+    }
+
+    if (dto.amountPaise && dto.amountPaise > transaction.amountPaise) {
+      throw new BadRequestException(
+        `Refund amount (${dto.amountPaise}) exceeds transaction amount (${transaction.amountPaise})`,
+      );
+    }
+
+    if (!transaction.razorpayPaymentId) {
+      throw new BadRequestException(
+        'Transaction has no Razorpay payment ID — cannot process refund',
+      );
+    }
+
+    const refundResult = await this.razorpayService.createRefund(
+      transaction.razorpayPaymentId,
+      {
+        amount: dto.amountPaise || transaction.amountPaise,
+        notes: { reason: dto.reason, initiatedBy: 'admin' },
+      },
+    );
+
+    await this.prisma.transaction.update({
+      where: { id: dto.transactionId },
+      data: { status: 'REFUNDED' },
+    });
+
+    if (transaction.bookingId) {
+      await this.prisma.booking.update({
+        where: { id: transaction.bookingId },
+        data: { paymentStatus: 'REFUNDED' },
+      });
+    }
+
+    return refundResult;
+  }
+
+  async getReconciliation() {
+    const totals = await this.prisma.transaction.groupBy({
+      by: ['type'],
+      _sum: { amountPaise: true, commissionPaise: true, netPayoutPaise: true },
+      _count: true,
+      where: { status: 'PAID' },
+    });
+
+    const payoutBreakdown = await this.prisma.transaction.groupBy({
+      by: ['payoutStatus'],
+      _sum: { netPayoutPaise: true },
+      _count: true,
+      where: { type: 'BOOKING_COMMISSION', status: 'PAID' },
+    });
+
+    return {
+      revenueByStream: totals.map((t) => ({
+        type: t.type,
+        count: t._count,
+        totalAmountPaise: t._sum.amountPaise,
+        totalCommissionPaise: t._sum.commissionPaise,
+        totalNetPayoutPaise: t._sum.netPayoutPaise,
+      })),
+      payoutBreakdown: payoutBreakdown.map((p) => ({
+        status: p.payoutStatus,
+        count: p._count,
+        totalPaise: p._sum.netPayoutPaise,
+      })),
+    };
   }
 }

@@ -14,6 +14,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
+import { InitiateRefundDto } from './dto/initiate-refund.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { AssignRoleDto } from './dto/manage-role.dto';
@@ -213,5 +214,35 @@ export class AdminController {
   @Post('notifications/mark-all-read')
   async markAllNotificationsRead() {
     return this.adminService.markAllNotificationsRead();
+  }
+
+  // ──────────────────────────────────────────────────
+  // Payment Management (Phase 5)
+  // ──────────────────────────────────────────────────
+
+  @Get('payments')
+  async getPaymentLog(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('vendorId') vendorId?: string,
+    @Query('type') type?: string,
+  ) {
+    return this.adminService.getPaymentLog(
+      parseInt(page, 10),
+      parseInt(limit, 10),
+      { dateFrom, dateTo, vendorId, type },
+    );
+  }
+
+  @Post('payments/refund')
+  async initiateRefund(@Body() dto: InitiateRefundDto) {
+    return this.adminService.initiateRefund(dto);
+  }
+
+  @Get('payments/reconciliation')
+  async getReconciliation() {
+    return this.adminService.getReconciliation();
   }
 }
