@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 4 (Vendor CRM and Booking Flow) — IN PROGRESS. Plan 04-02 complete.
+**Current focus:** Phase 5 (Payments and Commission Settlement) — Plan 1 of 3 complete. CommissionRate model, payment checkout, and client verification built.
 
 ## Current Position
 
-Phase: 4 of 7 (Vendor CRM and Booking Flow) — IN PROGRESS
-Plan: 2 of 3 in current phase (04-02 complete)
-Status: Plan 04-02 complete — QuoteModule with state machine, BullMQ expiry, and Booking creation on accept. Ready for 04-03.
-Last activity: 2026-03-08 — Phase 4 Plan 02 complete
+Phase: 5 of 7 (Payments and Commission Settlement)
+Plan: 1 of 3 in current phase
+Status: Plan 05-01 complete — CommissionRate table seeded, PaymentModule with Razorpay order creation and signature verification. Ready for Plan 05-02 (webhook processing + payouts).
+Last activity: 2026-03-13 — Phase 5 Plan 01 complete
 
-Progress: [█████░░░░░] 52% (11/21 plans complete)
+Progress: [██████░░░░] 62% (13/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 12 min
-- Total execution time: 2.11 hours
+- Total plans completed: 13
+- Average duration: 11 min
+- Total execution time: 2.38 hours
 
 **By Phase:**
 
@@ -30,11 +30,12 @@ Progress: [█████░░░░░] 52% (11/21 plans complete)
 | 01-foundation | 3/3 | 75 min | 25 min |
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
 | 03-lead-routing-engine | 3/3 | 13 min | 4 min |
-| 04-vendor-crm-and-booking-flow | 2/3 | 27 min | 13 min |
+| 04-vendor-crm-and-booking-flow | 3/3 | 39 min | 13 min |
+| 05-payments-and-commission-settlement | 1/3 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (3 min), 03-03 (5 min), 04-01 (13 min), 04-02 (14 min)
-- Trend: Phase 4 consistent at ~13 min — quote state machine and Prisma $transaction patterns are well-established
+- Last 5 plans: 04-01 (13 min), 04-02 (14 min), 04-03 (12 min), 05-01 (5 min)
+- Trend: Phase 5 Plan 01 fast at 5 min — schema evolution + module wiring are well-practiced patterns
 
 *Updated after each plan completion*
 
@@ -96,6 +97,15 @@ Recent decisions affecting current work:
 - [04-02]: VendorStats.totalLeadsWon incremented outside $transaction — consistent with pitfall 4 (Redis cache) pattern from 04-01
 - [04-02]: QuoteController uses @Controller() with full paths — avoids nested controller routing complexity
 - [04-02]: submitQuote checks submittedCount excluding current quote (post-transition) — correct QUOTES_RECEIVED detection
+- [04-03]: BOOKING_PUSH_MESSAGES const at file level — single source of truth for all booking status notification copy
+- [04-03]: transitionStatus uses requesterRole from JWT activeRole to determine vendor vs customer auth check
+- [04-03]: ReviewController has no class-level UseGuards — public GET endpoint requires no auth, guarded endpoints apply UseGuards per-method
+- [04-03]: routeTopThree fetches assignmentId before updateMany for emitToVendor payload — findFirst + updateMany pair is safe
+- [05-01]: Commission rate locked on Booking at order creation time — prevents disputes when admin changes rates for existing unpaid bookings
+- [05-01]: verifyPayment does NOT create Transaction record — webhook is source of truth; avoids race condition (Pitfall 3)
+- [05-01]: Transaction.vendorSubscriptionId made optional with onDelete SetNull — enables BOOKING_COMMISSION transactions without subscription link
+- [05-01]: RazorpayService.keySecret stored as private field for HMAC payment signature validation
+- [05-01]: Default commission rate 500 bps (5%) seeded as global fallback — more specific rates addable by admin in Plan 05-03
 
 ### Pending Todos
 
@@ -106,12 +116,12 @@ None.
 - [Pre-Phase 1]: TRAI DLT registration — submit OTP + transactional SMS templates to MSG91 before any OTP SMS can be sent. Ops action, not a code task.
 - [Pre-Phase 2]: Razorpay Payout (RazorpayX) KYC — submit application during Phase 2; approval timeline 2-4 weeks; missing this gate blocks Phase 5 vendor payouts.
 - [Phase 3 resolved]: PostGIS + Prisma integration — resolved with $queryRaw and ST_DWithin geography casting.
-- [Phase 5 planning]: Razorpay commission split mechanics and GST category rate handling need research before Phase 5 planning begins.
+- [Phase 5 resolved]: Razorpay commission split — resolved with RazorpayX Payouts (collect full, payout net) instead of Route (linked accounts). GST treated as inclusive in commission rate for MVP.
 - [Phase 6 planning]: Kiwi Party / Birthday Kart integration contract must be defined before Phase 6 begins (Shopify webhook vs. CSV vs. custom API determines entire B2B architecture).
 - [Legal]: India DPDP Act consent implementation rules are evolving — get legal review before launch.
 
 ## Session Continuity
 
-Last session: 2026-03-08
-Stopped at: Completed 04-02-PLAN.md — QuoteModule with state machine, BullMQ expiry, and Booking creation complete. Next: 04-03 (Booking lifecycle + reviews).
+Last session: 2026-03-13
+Stopped at: Completed 05-01-PLAN.md — CommissionRate + PaymentModule. Ready for 05-02 (webhook processing + payouts).
 Resume file: None
