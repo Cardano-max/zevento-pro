@@ -5,6 +5,8 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -19,6 +21,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { VendorOwnerGuard } from '../vendor/guards/vendor-owner.guard';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { TransitionOrderStatusDto } from './dto/transition-order-status.dto';
 
 /**
  * OrderController: B2B product order endpoints.
@@ -26,11 +29,12 @@ import { CreateOrderDto } from './dto/create-order.dto';
  * Uses full paths per endpoint (consistent with QuoteController pattern from 04-02 decision).
  * No class-level route prefix to avoid nested route complexity.
  *
- * POST /orders              - Planner places a new order
- * GET  /orders/mine         - Planner's order history
- * GET  /orders/vendor       - Supplier's order dashboard
- * GET  /orders/:id          - Order detail (buyer, vendor, or admin)
- * POST /orders/:id/cancel   - Cancel a PENDING or CONFIRMED order
+ * POST  /orders                - Planner places a new order
+ * GET   /orders/mine           - Planner's order history
+ * GET   /orders/vendor         - Supplier's order dashboard
+ * GET   /orders/:id            - Order detail (buyer, vendor, or admin)
+ * POST  /orders/:id/cancel     - Cancel a PENDING or CONFIRMED order
+ * PATCH /orders/:id/status     - Supplier advances order through lifecycle
  */
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -103,6 +107,7 @@ export class OrderController {
   /**
    * POST /orders/:id/cancel
    * Cancel a PENDING or CONFIRMED order. Restores stock.
+   * Delegates to transitionOrderStatus internally.
    */
   @Post('orders/:id/cancel')
   @Roles('PLANNER', 'CUSTOMER', 'SUPPLIER', 'ADMIN')
@@ -112,5 +117,27 @@ export class OrderController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.orderService.cancelOrder(id, user.userId, user.activeRole);
+  }
+
+  /**
+   * PATCH /orders/:id/status
+   * Supplier (or admin) advances order through the lifecycle state machine:
+   * PENDING → CONFIRMED → DISPATCHED → DELIVERED (+ CANCELLED from PENDING/CONFIRMED)
+   *
+   * Buyers can only use POST /orders/:id/cancel for cancellations.
+   */
+  @Patch('orders/:id/status')
+  @Roles('SUPPLIER', 'PLANNER', 'CUSTOMER', 'ADMIN')
+  transitionStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: TransitionOrderStatusDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.orderService.transitionOrderStatus(
+      id,
+      dto,
+      user.userId,
+      user.activeRole,
+    );
   }
 }

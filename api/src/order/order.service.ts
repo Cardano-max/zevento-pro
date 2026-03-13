@@ -8,7 +8,45 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { TransitionOrderStatusDto } from './dto/transition-order-status.dto';
+
+/**
+ * Valid status transitions for ProductOrder state machine.
+ * PENDING    → CONFIRMED | CANCELLED
+ * CONFIRMED  → DISPATCHED | CANCELLED
+ * DISPATCHED → DELIVERED
+ * DELIVERED and CANCELLED are terminal states.
+ */
+const VALID_ORDER_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['DISPATCHED', 'CANCELLED'],
+  DISPATCHED: ['DELIVERED'],
+};
+
+/**
+ * Push notification messages for each order status transition.
+ * Mirrors BOOKING_PUSH_MESSAGES pattern from Phase 4 Plan 03.
+ */
+const ORDER_STATUS_MESSAGES: Record<string, { title: string; body: string }> = {
+  CONFIRMED: {
+    title: 'Order Confirmed',
+    body: 'Your order has been confirmed by the supplier!',
+  },
+  DISPATCHED: {
+    title: 'Order Dispatched',
+    body: 'Your order has been dispatched and is on its way!',
+  },
+  DELIVERED: {
+    title: 'Order Delivered',
+    body: 'Your order has been delivered!',
+  },
+  CANCELLED: {
+    title: 'Order Cancelled',
+    body: 'Your order has been cancelled.',
+  },
+};
 
 /**
  * OrderService: B2B product order placement and management.
@@ -17,6 +55,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
  *   1. Planner calls createOrder → atomic stock reservation in $transaction
  *   2. Planner calls PaymentService.createProductOrderPayment → Razorpay order
  *   3. Webhook captures payment → OrderPaymentProcessor creates Transaction
+ *   4. Supplier calls transitionOrderStatus to advance lifecycle
  *
  * Stock decrement is atomic inside $transaction. Low-stock alerts enqueued
  * OUTSIDE the transaction (consistent with Pitfall 4 — no long-running ops in $transaction).
@@ -27,6 +66,7 @@ export class OrderService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
     @InjectQueue('stock-alerts') private readonly stockAlertQueue: Queue,
   ) {}
 
@@ -305,17 +345,53 @@ export class OrderService {
    * Cancel a PENDING or CONFIRMED order.
    * Verifies requester is buyer or vendor owner. Restores stock. Creates status history.
    * If payment was already captured, a refund must be initiated separately (Phase 5 refund flow).
+   *
+   * Delegates to transitionOrderStatus internally for consistent state machine behavior.
    */
   async cancelOrder(
     orderId: string,
     requesterId: string,
     requesterRole: string,
   ) {
+    return this.transitionOrderStatus(
+      orderId,
+      { status: 'CANCELLED' as any },
+      requesterId,
+      requesterRole,
+    );
+  }
+
+  /**
+   * Transition a ProductOrder through its lifecycle state machine.
+   *
+   * Valid transitions:
+   *   PENDING    → CONFIRMED | CANCELLED
+   *   CONFIRMED  → DISPATCHED | CANCELLED
+   *   DISPATCHED → DELIVERED
+   *
+   * Authorization:
+   *   - SUPPLIER: can transition if they own the order's vendor (forward transitions + CANCELLED)
+   *   - PLANNER/CUSTOMER: can only CANCEL from PENDING or CONFIRMED
+   *   - ADMIN: can perform any transition
+   *
+   * Uses prisma.$transaction with updateMany (status-filter) to prevent TOCTOU races.
+   * On CANCELLED: restores stock for each order item atomically within the same transaction.
+   * Creates OrderStatusHistory on every transition.
+   * Sends push notification to buyer after every successful transition.
+   */
+  async transitionOrderStatus(
+    orderId: string,
+    dto: TransitionOrderStatusDto,
+    requesterId: string,
+    requesterRole: string,
+  ) {
+    // 1. Fetch order with all needed relations
     const order = await this.prisma.productOrder.findUnique({
       where: { id: orderId },
       include: {
         items: true,
         vendor: { select: { id: true, userId: true } },
+        buyer: { select: { id: true, phone: true } },
       },
     });
 
@@ -323,55 +399,131 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
 
-    // Verify requester has permission (buyer, vendor owner, or admin)
-    const isBuyer = order.buyerId === requesterId;
-    const isVendorOwner = order.vendor.userId === requesterId;
-    const isAdmin = requesterRole === 'ADMIN';
+    const currentStatus = order.status;
+    const targetStatus = dto.status as string;
 
-    if (!isBuyer && !isVendorOwner && !isAdmin) {
-      throw new ForbiddenException('You do not have permission to cancel this order');
+    // 2. Authorization check
+    const isAdmin = requesterRole === 'ADMIN';
+    const isVendorOwner = order.vendor.userId === requesterId;
+    const isSupplier = requesterRole === 'SUPPLIER';
+    const isBuyer =
+      (requesterRole === 'PLANNER' || requesterRole === 'CUSTOMER') &&
+      order.buyerId === requesterId;
+
+    if (!isAdmin) {
+      if (isSupplier && isVendorOwner) {
+        // Supplier can perform all valid transitions
+      } else if (isBuyer) {
+        // Buyer can only cancel from PENDING or CONFIRMED
+        if (targetStatus !== 'CANCELLED') {
+          throw new ForbiddenException(
+            'Buyers can only cancel orders, not advance their status',
+          );
+        }
+        if (!['PENDING', 'CONFIRMED'].includes(currentStatus)) {
+          throw new ForbiddenException(
+            `Buyers can only cancel orders in PENDING or CONFIRMED status. Current status: ${currentStatus}`,
+          );
+        }
+      } else {
+        throw new ForbiddenException(
+          'You do not have permission to update this order status',
+        );
+      }
     }
 
-    if (!['PENDING', 'CONFIRMED'].includes(order.status)) {
+    // 3. Validate state machine transition
+    const allowedTransitions = VALID_ORDER_TRANSITIONS[currentStatus] ?? [];
+    if (!allowedTransitions.includes(targetStatus)) {
       throw new BadRequestException(
-        `Order cannot be cancelled in status: ${order.status}. Only PENDING or CONFIRMED orders can be cancelled.`,
+        `Invalid status transition from ${currentStatus} to ${targetStatus}. Allowed: ${allowedTransitions.join(', ') || 'none (terminal state)'}`,
       );
     }
 
-    // Restore stock for each item
+    // 4. Atomic transition with race condition protection
     await this.prisma.$transaction(async (tx) => {
-      for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        });
-      }
-
-      await tx.productOrder.update({
-        where: { id: orderId },
+      // Use updateMany with current status filter — prevents TOCTOU race
+      const updated = await tx.productOrder.updateMany({
+        where: { id: orderId, status: currentStatus },
         data: {
-          status: 'CANCELLED',
-          cancelledAt: new Date(),
+          status: targetStatus,
+          confirmedAt: targetStatus === 'CONFIRMED' ? new Date() : undefined,
+          dispatchedAt: targetStatus === 'DISPATCHED' ? new Date() : undefined,
+          deliveredAt: targetStatus === 'DELIVERED' ? new Date() : undefined,
+          cancelledAt: targetStatus === 'CANCELLED' ? new Date() : undefined,
         },
       });
 
+      if (updated.count === 0) {
+        throw new BadRequestException(
+          'Order status conflict — may have been updated by another request',
+        );
+      }
+
+      // Create status history record
       await tx.orderStatusHistory.create({
         data: {
           orderId,
-          fromStatus: order.status,
-          toStatus: 'CANCELLED',
-          note:
-            order.paymentStatus === 'CAPTURED'
-              ? 'Order cancelled. Payment was captured — refund must be initiated separately through admin.'
-              : undefined,
+          fromStatus: currentStatus,
+          toStatus: targetStatus,
+          note: dto.note ?? null,
         },
       });
+
+      // If cancelling: restore stock for each order item atomically
+      if (targetStatus === 'CANCELLED') {
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
     });
 
+    // 5. Send push notifications OUTSIDE transaction (consistent with Pitfall 4 pattern)
+    const pushMessage = ORDER_STATUS_MESSAGES[targetStatus];
+    if (pushMessage) {
+      // Always notify the buyer
+      await this.notificationService.sendPushToCustomer(order.buyerId, {
+        title: pushMessage.title,
+        body: pushMessage.body,
+        data: { orderId, type: 'ORDER_STATUS', status: targetStatus },
+      });
+    }
+
+    // If cancelled by vendor/admin, also notify the vendor via vendor push
+    if (targetStatus === 'CANCELLED' && (isAdmin || (isSupplier && isVendorOwner))) {
+      // Notify buyer was already done above; no additional vendor notification needed
+      // (vendor initiated the cancellation themselves)
+    }
+
+    // If cancelled by buyer, notify vendor
+    if (targetStatus === 'CANCELLED' && isBuyer) {
+      await this.notificationService.sendPushToVendor(order.vendor.id, {
+        leadId: orderId,
+        eventType: 'Order cancelled by customer',
+        city: 'Order Update',
+      });
+    }
+
     this.logger.log(
-      `Order ${orderId} cancelled by ${requesterId} (role: ${requesterRole})`,
+      `Order ${orderId}: ${currentStatus} → ${targetStatus} by ${requesterRole} ${requesterId}`,
     );
 
-    return { cancelled: true, orderId };
+    // Return updated order with full status history
+    return this.prisma.productOrder.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: { select: { id: true, name: true, pricePaise: true } },
+          },
+        },
+        vendor: { select: { id: true, businessName: true } },
+        buyer: { select: { id: true, phone: true } },
+        statusHistory: { orderBy: { changedAt: 'desc' } },
+      },
+    });
   }
 }
