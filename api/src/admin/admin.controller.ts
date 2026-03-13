@@ -22,6 +22,7 @@ import {
 } from './dto/manage-commission.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { AssignRoleDto } from './dto/manage-role.dto';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 import { ReviewKycDto } from './dto/review-kyc.dto';
 
 @Controller('admin')
@@ -278,5 +279,14 @@ export class AdminController {
   @Delete('commission-rates/:id')
   async deleteCommissionRate(@Param('id') id: string) {
     return this.adminService.deleteCommissionRate(id);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Analytics Dashboard (Phase 7)
+  // ──────────────────────────────────────────────────
+
+  @Get('analytics/dashboard')
+  async getAnalyticsDashboard(@Query() query: AnalyticsQueryDto) {
+    return this.adminService.getAnalyticsDashboard(query);
   }
 }
