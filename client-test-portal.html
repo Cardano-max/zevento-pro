@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zevento Pro — API Testing Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* -------------------------------------------------------
+       CSS CUSTOM PROPERTIES — LIGHT & DARK THEMES
+    ------------------------------------------------------- */
+    :root {
+      --bg: #f8f7ff;
+      --surface: #ffffff;
+      --surface-2: #f1f0ff;
+      --surface-rgb: 255, 255, 255;
+      --border: #e2e0f0;
+      --text: #1a1825;
+      --text-muted: #6b6880;
+      --accent: #6c47ff;
+      --accent-light: #ede9ff;
+      --accent-alpha: rgba(108, 71, 255, 0.15);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --transition: all 0.2s ease;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0e17;
+      --surface: #1a1826;
+      --surface-2: #221f32;
+      --surface-rgb: 26, 24, 38;
+      --border: #2e2b42;
+      --text: #f0eeff;
+      --text-muted: #9590b0;
+      --accent: #8b6fff;
+      --accent-light: #2a2244;
+      --accent-alpha: rgba(139, 111, 255, 0.18);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+    }
+
+    /* -------------------------------------------------------
+       RESET & BASE
+    ------------------------------------------------------- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+      font-weight: 400;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* -------------------------------------------------------
+       NAVIGATION
+    ------------------------------------------------------- */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      background: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .nav-logo-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6c47ff 0%, #a855f7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.05em;
+      flex-shrink: 0;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent-alpha);
+    }
+
+    #theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition), transform 0.3s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    #theme-toggle:hover {
+      background: var(--surface-2);
+      color: var(--accent);
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    #theme-toggle svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.4s ease;
+    }
+
+    /* -------------------------------------------------------
+       HERO SECTION
+    ------------------------------------------------------- */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 80px 32px 96px;
+      background: linear-gradient(135deg, #6c47ff 0%, #a855f7 50%, #ec4899 100%);
+      text-align: center;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      animation: drift 20s ease infinite alternate;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% 120%, rgba(255,255,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      50%  { transform: translate(-10px, 8px) scale(1.02); }
+      100% { transform: translate(10px, -8px) scale(0.98); }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .hero-monogram {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+
+    .hero-wordmark {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      font-size: 17px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.82);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 100px;
+      background: #ffffff;
+      color: #6c47ff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      text-decoration: none;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+      color: #5835e8;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 24px;
+      border-radius: 100px;
+      background: rgba(255,255,255,0.15);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.22);
+      transform: translateY(-2px);
+    }
+
+    .hero-stats {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+
+    .hero-stat {
+      text-align: center;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .hero-stat strong {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-stat span {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.75;
+    }
+
+    .hero-stat-divider {
+      width: 1px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* -------------------------------------------------------
+       MAIN JOURNEYS CONTAINER
+    ------------------------------------------------------- */
+    .journeys {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 64px 32px 80px;
+    }
+
+    .section-label {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-label h2 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .section-label p {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    /* -------------------------------------------------------
+       JOURNEY SECTION
+    ------------------------------------------------------- */
+    .journey-section {
+      margin-bottom: 56px;
+    }
+
+    .journey-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .journey-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      border: 1.5px solid transparent;
+    }
+
+    .journey-badge.customer {
+      background: linear-gradient(135deg, rgba(108, 71, 255, 0.12), rgba(168, 85, 247, 0.08));
+      color: #6c47ff;
+      border-color: rgba(108, 71, 255, 0.2);
+    }
+    [data-theme="dark"] .journey-badge.customer {
+      background: linear-gradient(135deg, rgba(139, 111, 255, 0.18), rgba(168, 85, 247, 0.12));
+      color: #a78bfa;
+      border-color: rgba(139, 111, 255, 0.25);
+    }
+
+    .journey-badge.vendor {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(139, 92, 246, 0.08));
+      color: #7c3aed;
+      border-color: rgba(124, 58, 237, 0.2);
+    }
+    [data-theme="dark"] .journey-badge.vendor {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(167, 139, 250, 0.12));
+      color: #a78bfa;
+      border-color: rgba(139, 92, 246, 0.25);
+    }
+
+    .journey-badge.supplier {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.08));
+      color: #059669;
+      border-color: rgba(16, 185, 129, 0.2);
+    }
+    [data-theme="dark"] .journey-badge.supplier {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(52, 211, 153, 0.12));
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+
+    .journey-badge.admin {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.08));
+      color: #d97706;
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+    [data-theme="dark"] .journey-badge.admin {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(251, 191, 36, 0.12));
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+
+    .journey-count {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* -------------------------------------------------------
+       GLASSMORPHISM CARD
+    ------------------------------------------------------- */
+    .journey-card {
+      background: rgba(var(--surface-rgb), 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 24px;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .journey-card:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .journey-card.customer { border-top: 3px solid #6c47ff; }
+    .journey-card.vendor   { border-top: 3px solid #7c3aed; }
+    .journey-card.supplier { border-top: 3px solid #10b981; }
+    .journey-card.admin    { border-top: 3px solid #f59e0b; }
+
+    /* -------------------------------------------------------
+       ENDPOINT GRID
+    ------------------------------------------------------- */
+    .endpoint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 10px;
+    }
+
+    /* -------------------------------------------------------
+       ENDPOINT PILL
+    ------------------------------------------------------- */
+    .endpoint-pill {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .endpoint-pill::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+      transition: width 0.2s ease;
+    }
+
+    .endpoint-pill:hover {
+      transform: translateY(-2px);
+      border-color: transparent;
+      box-shadow: var(--shadow-md);
+    }
+
+    .endpoint-pill:hover::before {
+      width: 4px;
+    }
+
+    /* Method-colored left border */
+    .endpoint-pill.method-post::before  { background: #6c47ff; }
+    .endpoint-pill.method-get::before   { background: #10b981; }
+    .endpoint-pill.method-patch::before { background: #f59e0b; }
+    .endpoint-pill.method-delete::before{ background: #ef4444; }
+
+    .endpoint-pill:hover.method-post  { box-shadow: 0 4px 16px rgba(108, 71, 255, 0.14); }
+    .endpoint-pill:hover.method-get   { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.14); }
+    .endpoint-pill:hover.method-patch { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.14); }
+    .endpoint-pill:hover.method-delete{ box-shadow: 0 4px 16px rgba(239, 68, 68, 0.14); }
+
+    .method-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 5px;
+      line-height: 1.4;
+      margin-top: 1px;
+    }
+
+    .method-badge.post  { background: rgba(108, 71, 255, 0.12); color: #6c47ff; }
+    .method-badge.get   { background: rgba(16, 185, 129, 0.12); color: #059669; }
+    .method-badge.patch { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .method-badge.delete{ background: rgba(239, 68, 68, 0.12);  color: #dc2626; }
+
+    [data-theme="dark"] .method-badge.post  { background: rgba(108, 71, 255, 0.2); color: #a78bfa; }
+    [data-theme="dark"] .method-badge.get   { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    [data-theme="dark"] .method-badge.patch { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    [data-theme="dark"] .method-badge.delete{ background: rgba(239, 68, 68, 0.2);  color: #f87171; }
+
+    .endpoint-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .endpoint-path {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      color: var(--text);
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.01em;
+    }
+
+    .endpoint-desc {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-top: 2px;
+    }
+
+    .endpoint-arrow {
+      flex-shrink: 0;
+      color: var(--text-muted);
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: var(--transition);
+      margin-top: 2px;
+    }
+
+    .endpoint-pill:hover .endpoint-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* -------------------------------------------------------
+       INFO BANNER
+    ------------------------------------------------------- */
+    .info-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-alpha);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 32px;
+    }
+
+    .info-banner svg {
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .info-banner p {
+      font-size: 13.5px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .info-banner p strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* -------------------------------------------------------
+       PHASE DIVIDER
+    ------------------------------------------------------- */
+    .phase-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 0 0 48px;
+    }
+
+    .phase-divider::before,
+    .phase-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .phase-divider span {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* -------------------------------------------------------
+       FOOTER
+    ------------------------------------------------------- */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 32px;
+      transition: background 0.3s ease;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-logo-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #6c47ff 0%, #a855f7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .footer-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .footer-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+    }
+
+    .footer-chip svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .footer-divider {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* -------------------------------------------------------
+       SCROLL REVEAL (CSS only)
+    ------------------------------------------------------- */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .journey-section {
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .journey-section:nth-child(1) { animation-delay: 0.05s; }
+    .journey-section:nth-child(2) { animation-delay: 0.12s; }
+    .journey-section:nth-child(3) { animation-delay: 0.19s; }
+    .journey-section:nth-child(4) { animation-delay: 0.26s; }
+
+    /* -------------------------------------------------------
+       RESPONSIVE
+    ------------------------------------------------------- */
+    @media (max-width: 768px) {
+      nav {
+        padding: 0 16px;
+      }
+
+      .nav-badge {
+        display: none;
+      }
+
+      .hero {
+        padding: 56px 20px 72px;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero p {
+        font-size: 15px;
+      }
+
+      .hero-stats {
+        gap: 20px;
+      }
+
+      .hero-stat strong {
+        font-size: 20px;
+      }
+
+      .journeys {
+        padding: 40px 16px 56px;
+      }
+
+      .endpoint-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .journey-card {
+        padding: 16px;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .footer-meta {
+        gap: 6px;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        font-size: 14px;
+        padding: 12px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-cta-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        justify-content: center;
+        text-align: center;
+      }
+
+      .hero-stats {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .hero-stat-divider {
+        width: 32px;
+        height: 1px;
+      }
+    }
+
+    /* -------------------------------------------------------
+       TOOLTIP
+    ------------------------------------------------------- */
+    .endpoint-pill[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: var(--bg);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* -------------------------------------------------------
+       LUCIDE ICON SIZE NORMALIZATION
+    ------------------------------------------------------- */
+    .icon-sm { width: 14px; height: 14px; }
+    .icon-md { width: 16px; height: 16px; }
+    .icon-lg { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+
+  <!-- =====================================================
+       NAVIGATION
+  ===================================================== -->
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-mark">Z</div>
+      <span>Zevento Pro</span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-badge">API v1</span>
+      <button id="theme-toggle" aria-label="Toggle dark/light mode">
+        <i data-lucide="sun" id="icon-sun"></i>
+        <i data-lucide="moon" id="icon-moon" style="display:none;"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- =====================================================
+       HERO
+  ===================================================== -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-monogram">Z</div>
+      <span class="hero-wordmark">Zevento Pro &mdash; India&rsquo;s Multi-Sided Event Marketplace</span>
+      <h1>API Testing Portal</h1>
+      <p>Explore all 93 endpoints organized by user journey — Customer, Vendor, Supplier, and Admin. Built on NestJS with Prisma, Razorpay, and PostGIS.</p>
+      <div class="hero-cta-group">
+        <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="btn-primary">
+          <i data-lucide="book-open" class="icon-md"></i>
+          Open Swagger UI &rarr;
+        </a>
+        <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="btn-secondary">
+          <i data-lucide="terminal" class="icon-md"></i>
+          localhost:3001
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>93</strong>
+          <span>Endpoints</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <strong>4</strong>
+          <span>User Journeys</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <strong>7</strong>
+          <span>Phases</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <strong>NestJS</strong>
+          <span>Framework</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       JOURNEYS
+  ===================================================== -->
+  <main class="journeys">
+
+    <div class="section-label">
+      <h2>User Journeys</h2>
+      <p>32 key endpoints across four roles</p>
+    </div>
+
+    <div class="info-banner">
+      <i data-lucide="info" class="icon-md"></i>
+      <p>Click any endpoint to open <strong>Swagger UI</strong> at <strong>localhost:3001/api-docs</strong> where you can authenticate and run live requests. Make sure the API server is running with <code style="font-size:12px; background:var(--surface); padding:1px 5px; border-radius:4px; border:1px solid var(--border);">pnpm dev</code> from the <code style="font-size:12px; background:var(--surface); padding:1px 5px; border-radius:4px; border:1px solid var(--border);">/api</code> directory.</p>
+    </div>
+
+    <!-- ===== CUSTOMER JOURNEY ===== -->
+    <section class="journey-section">
+      <div class="journey-header">
+        <span class="journey-badge customer">
+          <i data-lucide="user" class="icon-sm"></i>
+          Customer Journey
+        </span>
+        <span class="journey-count">10 endpoints</span>
+      </div>
+      <div class="journey-card customer">
+        <div class="endpoint-grid">
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/auth/otp/send</div>
+              <div class="endpoint-desc">Send OTP to phone number</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/auth/otp/verify</div>
+              <div class="endpoint-desc">Verify OTP and receive JWT session</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/customer/categories</div>
+              <div class="endpoint-desc">Browse event categories</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/customer/vendors</div>
+              <div class="endpoint-desc">Search and filter vendor listings</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/leads/inquiries</div>
+              <div class="endpoint-desc">Submit event inquiry with DPDP consent</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/leads/:leadId/quotes</div>
+              <div class="endpoint-desc">View all vendor quotes for a lead</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/quotes/:id/accept</div>
+              <div class="endpoint-desc">Accept the best vendor quote</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/payments/orders</div>
+              <div class="endpoint-desc">Create Razorpay payment order</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/payments/verify</div>
+              <div class="endpoint-desc">Verify Razorpay payment signature</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/bookings/:id/review</div>
+              <div class="endpoint-desc">Leave verified post-booking review</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="phase-divider"><span>Vendor &amp; Supply Side</span></div>
+
+    <!-- ===== VENDOR JOURNEY ===== -->
+    <section class="journey-section">
+      <div class="journey-header">
+        <span class="journey-badge vendor">
+          <i data-lucide="briefcase" class="icon-sm"></i>
+          Vendor Journey
+        </span>
+        <span class="journey-count">10 endpoints</span>
+      </div>
+      <div class="journey-card vendor">
+        <div class="endpoint-grid">
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/vendor/profile</div>
+              <div class="endpoint-desc">Create vendor profile (onboarding step 1)</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/vendor/profile/business</div>
+              <div class="endpoint-desc">Update business details and categories</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/vendor/profile/kyc/submit</div>
+              <div class="endpoint-desc">Submit KYC documents for admin review</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/subscriptions/plans</div>
+              <div class="endpoint-desc">Browse available subscription tiers</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/subscriptions/checkout</div>
+              <div class="endpoint-desc">Start subscription billing via Razorpay</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/inbox</div>
+              <div class="endpoint-desc">View lead inbox (Socket.IO real-time)</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/inbox/assignments/:id/accept</div>
+              <div class="endpoint-desc">Accept an incoming routed lead</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/leads/:leadId/quotes</div>
+              <div class="endpoint-desc">Create a price quote for a lead</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/quotes/:id/submit</div>
+              <div class="endpoint-desc">Submit finalized quote to customer</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/bookings/:id/status</div>
+              <div class="endpoint-desc">Update booking fulfillment status</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SUPPLIER JOURNEY ===== -->
+    <section class="journey-section">
+      <div class="journey-header">
+        <span class="journey-badge supplier">
+          <i data-lucide="package" class="icon-sm"></i>
+          Supplier Journey
+        </span>
+        <span class="journey-count">5 endpoints</span>
+      </div>
+      <div class="journey-card supplier">
+        <div class="endpoint-grid">
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/products</div>
+              <div class="endpoint-desc">List a new product in the B2B catalog</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/products/:id/images</div>
+              <div class="endpoint-desc">Upload product images to Cloudinary</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/catalog/products</div>
+              <div class="endpoint-desc">Browse the public product catalog</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/orders</div>
+              <div class="endpoint-desc">Place a B2B product order</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/orders/:id/status</div>
+              <div class="endpoint-desc">Update order fulfillment status</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="phase-divider"><span>Platform Administration</span></div>
+
+    <!-- ===== ADMIN JOURNEY ===== -->
+    <section class="journey-section">
+      <div class="journey-header">
+        <span class="journey-badge admin">
+          <i data-lucide="shield" class="icon-sm"></i>
+          Admin Journey
+        </span>
+        <span class="journey-count">7 endpoints</span>
+      </div>
+      <div class="journey-card admin">
+        <div class="endpoint-grid">
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/vendors/kyc-queue</div>
+              <div class="endpoint-desc">View pending KYC submissions queue</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-post">
+            <span class="method-badge post">POST</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/vendors/:id/kyc-review</div>
+              <div class="endpoint-desc">Approve or reject a vendor KYC</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/analytics/dashboard</div>
+              <div class="endpoint-desc">Full platform analytics dashboard</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/leads/:id/routing-trace</div>
+              <div class="endpoint-desc">Inspect full lead routing audit log</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/leads/:id/routing-override</div>
+              <div class="endpoint-desc">Override vendor assignment for a lead</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-get">
+            <span class="method-badge get">GET</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/markets</div>
+              <div class="endpoint-desc">List all platform markets by region</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+          <a href="http://localhost:3001/api-docs" target="_blank" rel="noopener noreferrer" class="endpoint-pill method-patch">
+            <span class="method-badge patch">PATCH</span>
+            <div class="endpoint-info">
+              <div class="endpoint-path">/admin/markets/:id/status</div>
+              <div class="endpoint-desc">Enable or disable a market</div>
+            </div>
+            <i data-lucide="external-link" class="endpoint-arrow icon-sm"></i>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =====================================================
+       FOOTER
+  ===================================================== -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo-mark">Z</div>
+        <span class="footer-name">Zevento Pro API</span>
+      </div>
+      <div class="footer-meta">
+        <span class="footer-chip">
+          <i data-lucide="zap" class="icon-sm"></i>
+          NestJS v10
+        </span>
+        <span class="footer-chip">
+          <i data-lucide="database" class="icon-sm"></i>
+          Prisma + PostGIS
+        </span>
+        <span class="footer-chip">
+          <i data-lucide="credit-card" class="icon-sm"></i>
+          Razorpay
+        </span>
+        <div class="footer-divider"></div>
+        <span class="footer-copy">localhost:3001 &mdash; open <a href="http://localhost:3001/api-docs" target="_blank" style="color:var(--accent); font-weight:500;">api-docs</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ===================================================== -->
+  <script>
+    // -------------------------------------------------------
+    // THEME SYSTEM — init from localStorage or system preference
+    // -------------------------------------------------------
+    (function () {
+      var saved = localStorage.getItem('zevento-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var initial = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', initial);
+    })();
+
+    // -------------------------------------------------------
+    // DOM READY
+    // -------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', function () {
+
+      // Init Lucide icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+
+      // Read actual current theme (set by IIFE above)
+      var currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      updateToggleIcon(currentTheme);
+
+      // Theme toggle button handler
+      var toggleBtn = document.getElementById('theme-toggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          var current = document.documentElement.getAttribute('data-theme');
+          var next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('zevento-theme', next);
+          updateToggleIcon(next);
+
+          // Rotate the button for tactile feedback
+          toggleBtn.style.transform = 'scale(1.15) rotate(20deg)';
+          setTimeout(function () {
+            toggleBtn.style.transform = '';
+          }, 250);
+        });
+      }
+    });
+
+    // -------------------------------------------------------
+    // TOGGLE ICON — swap sun/moon based on active theme
+    // -------------------------------------------------------
+    function updateToggleIcon(theme) {
+      var sunIcon  = document.getElementById('icon-sun');
+      var moonIcon = document.getElementById('icon-moon');
+      if (!sunIcon || !moonIcon) return;
+
+      if (theme === 'dark') {
+        // Dark mode active — show sun (to switch to light)
+        sunIcon.style.display  = 'inline-block';
+        moonIcon.style.display = 'none';
+      } else {
+        // Light mode active — show moon (to switch to dark)
+        sunIcon.style.display  = 'none';
+        moonIcon.style.display = 'inline-block';
+      }
+
+      // Re-render lucide icons after visibility changes
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+  </script>
+
+</body>
+</html>
