@@ -126,12 +126,12 @@ Plans:
   2. Planner can browse and search the supplier product catalog filtered by category and price, and view product details including fulfillment source (Zevento vs. supplier)
   3. Planner can place a B2B order and complete payment through the platform — the order appears in the supplier's management view immediately
   4. Supplier can update order status through the full lifecycle (Pending > Confirmed > Dispatched > Delivered) — planner sees current status without leaving the platform
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Supplier product management — product listing form, Cloudinary image upload, inventory tracking, low-stock alerts, stock reservation logic
-- [ ] 06-02: Planner-facing catalog and ordering — product browse/search, order placement, Razorpay checkout, MARKETPLACE_SALE transaction type
-- [ ] 06-03: Order lifecycle management — supplier order dashboard, status transitions (Pending > Confirmed > Dispatched > Delivered), planner order tracking view
+- [ ] 06-01-PLAN.md — Prisma schema (ProductCategory, Product, ProductImage, ProductOrder, ProductOrderItem, OrderStatusHistory), ProductModule with supplier CRUD, Cloudinary image upload, catalog browse/search API, BullMQ low-stock alerts
+- [ ] 06-02-PLAN.md — OrderModule with order placement (atomic stock reservation via $transaction), Razorpay payment checkout (MARKETPLACE_SALE), webhook routing extension by notes.type, OrderPaymentProcessor for commission split
+- [ ] 06-03-PLAN.md — Order lifecycle state machine (Pending > Confirmed > Dispatched > Delivered + Cancelled), stock restoration on cancel, OrderStatusHistory logging, planner push notifications on status changes
 
 ---
 
