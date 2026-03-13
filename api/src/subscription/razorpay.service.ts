@@ -6,11 +6,13 @@ import Razorpay from 'razorpay';
 export class RazorpayService {
   private readonly logger = new Logger(RazorpayService.name);
   private readonly instance: Razorpay | null;
+  private readonly keySecret: string;
   readonly devMode: boolean;
 
   constructor() {
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    this.keySecret = keySecret ?? '';
 
     if (
       !keyId ||
@@ -138,6 +140,68 @@ export class RazorpayService {
     }
 
     return this.instance!.subscriptions.fetch(subscriptionId);
+  }
+
+  // ─── Phase 5: Payment Order, Signature Validation, Refund ──────────
+
+  async createOrder(params: {
+    amount: number;
+    currency: string;
+    receipt: string;
+    notes?: Record<string, string>;
+  }) {
+    if (this.devMode) {
+      this.logger.warn('Dev mode: returning mock order');
+      return {
+        id: `order_mock_${Date.now()}`,
+        entity: 'order' as const,
+        amount: params.amount,
+        currency: params.currency,
+        receipt: params.receipt,
+        status: 'created' as const,
+      };
+    }
+
+    return this.instance!.orders.create({
+      amount: params.amount,
+      currency: params.currency,
+      receipt: params.receipt,
+      notes: params.notes,
+    });
+  }
+
+  validatePaymentSignature(
+    orderId: string,
+    paymentId: string,
+    signature: string,
+  ): boolean {
+    if (this.devMode) {
+      this.logger.warn('Dev mode: skipping payment signature verification');
+      return true;
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', this.keySecret)
+      .update(`${orderId}|${paymentId}`)
+      .digest('hex');
+    return expectedSignature === signature;
+  }
+
+  async createRefund(
+    paymentId: string,
+    params: { amount?: number; notes?: Record<string, string> },
+  ) {
+    if (this.devMode) {
+      this.logger.warn('Dev mode: returning mock refund');
+      return {
+        id: `rfnd_mock_${Date.now()}`,
+        payment_id: paymentId,
+        amount: params.amount,
+        status: 'processed' as const,
+      };
+    }
+
+    return this.instance!.payments.refund(paymentId, params);
   }
 
   validateWebhookSignature(

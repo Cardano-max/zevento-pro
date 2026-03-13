@@ -9,6 +9,7 @@ import { InboxModule } from './inbox/inbox.module';
 import { LeadModule } from './lead/lead.module';
 import { QuoteModule } from './quote/quote.module';
 import { NotificationModule } from './notification/notification.module';
+import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { RedisModule } from './redis/redis.module';
@@ -69,6 +70,7 @@ function parseBullRedisConnection() {
     QuoteModule,
     BookingModule,
     ReviewModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [],
