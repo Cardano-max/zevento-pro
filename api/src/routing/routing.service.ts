@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { ScoringService } from '../lead/scoring.service';
+import { VendorScoreFactors } from '../lead/types/vendor-score.interface';
 import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -46,6 +47,18 @@ export class RoutingService {
         vendorId,
         score: null,
         status: 'PENDING',
+      },
+    });
+
+    // Write routing trace (Mode A: single direct assignment)
+    await this.prisma.leadRoutingTrace.create({
+      data: {
+        leadId,
+        vendorId,
+        score: null,
+        scoreFactors: {},
+        selected: true,
+        skipReason: null,
       },
     });
 
@@ -130,9 +143,17 @@ export class RoutingService {
     );
 
     // Apply fairness cap: skip vendors at or over the limit
-    const selected: Array<{ vendorId: string; score: number }> = [];
+    const skipReasons = new Map<string, string>();
+    const selected: Array<{
+      vendorId: string;
+      score: number;
+      factors: VendorScoreFactors;
+    }> = [];
     for (const entry of scored) {
-      if (selected.length >= TOP_N) break;
+      if (selected.length >= TOP_N) {
+        skipReasons.set(entry.vendorId, 'TOP_N_LIMIT');
+        continue;
+      }
 
       const fairnessKey = `fairness:${entry.vendorId}`;
       const fairnessRaw = await this.redis.get(fairnessKey);
@@ -142,6 +163,7 @@ export class RoutingService {
         this.logger.debug(
           `Vendor ${entry.vendorId} skipped (fairness cap: ${fairnessCount}/${MAX_LEADS_PER_WINDOW})`,
         );
+        skipReasons.set(entry.vendorId, 'FAIRNESS_CAP');
         continue;
       }
 
@@ -170,6 +192,22 @@ export class RoutingService {
         },
       });
     }
+
+    // Write routing traces for ALL scored vendors (selected + skipped)
+    const selectedVendorIds = new Set(selected.map((s) => s.vendorId));
+    await this.prisma.leadRoutingTrace.createMany({
+      data: scored.map((entry) => ({
+        leadId,
+        vendorId: entry.vendorId,
+        score: entry.score,
+        scoreFactors: entry.factors as any,
+        selected: selectedVendorIds.has(entry.vendorId),
+        skipReason: selectedVendorIds.has(entry.vendorId)
+          ? null
+          : (skipReasons.get(entry.vendorId) ?? 'TOP_N_LIMIT'),
+      })),
+      skipDuplicates: true,
+    });
 
     // Update lead status to ROUTED
     await this.prisma.lead.update({

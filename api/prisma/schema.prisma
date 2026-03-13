@@ -135,6 +135,8 @@ model VendorProfile {
   // Phase 6: B2B product marketplace
   products          Product[]
   productOrders     ProductOrder[]  @relation("VendorProductOrders")
+  // Phase 7: Lead routing audit
+  routingTraces     LeadRoutingTrace[]
 
   @@map("vendor_profiles")
 }
@@ -340,10 +342,12 @@ model Lead {
   assignments     LeadAssignment[]
   quotes          Quote[]
   booking         Booking?
+  routingTraces   LeadRoutingTrace[]
 
   @@index([customerId])
   @@index([status])
   @@index([categoryId])
+  @@index([createdAt])
   @@map("leads")
 }
 
@@ -643,4 +647,30 @@ model OrderStatusHistory {
 
   @@index([orderId])
   @@map("order_status_history")
+}
+
+// ──────────────────────────────────────────────────
+// Phase 7: Lead Routing Audit
+// ──────────────────────────────────────────────────
+
+model LeadRoutingTrace {
+  id             String    @id @default(uuid()) @db.Uuid
+  leadId         String    @map("lead_id") @db.Uuid
+  vendorId       String    @map("vendor_id") @db.Uuid
+  score          Float?
+  scoreFactors   Json      @map("score_factors")
+  selected       Boolean   @default(false)
+  skipReason     String?   @map("skip_reason") @db.VarChar(30)
+  overriddenAt   DateTime? @map("overridden_at")
+  overriddenBy   String?   @map("overridden_by") @db.Uuid
+  overrideReason String?   @map("override_reason") @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  lead   Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  vendor VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, vendorId])
+  @@index([leadId])
+  @@index([vendorId])
+  @@map("lead_routing_traces")
 }

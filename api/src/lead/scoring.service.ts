@@ -89,6 +89,7 @@ export class ScoringService {
         )
         AND vp.status = 'APPROVED'
         AND vs.status IN ('ACTIVE', 'AUTHENTICATED')
+        AND m.status = 'ACTIVE'
         AND vc.category_id = ${categoryId}::uuid
       `;
       return rows.map((r) => r.vendor_id);
@@ -107,6 +108,7 @@ export class ScoringService {
       )
       AND vp.status = 'APPROVED'
       AND vs.status IN ('ACTIVE', 'AUTHENTICATED')
+      AND m.status = 'ACTIVE'
     `;
     return rows.map((r) => r.vendor_id);
   }
@@ -203,12 +205,14 @@ export class ScoringService {
     vendorIds: string[],
     eventLat: number,
     eventLng: number,
-  ): Promise<Array<{ vendorId: string; score: number }>> {
+  ): Promise<
+    Array<{ vendorId: string; score: number; factors: VendorScoreFactors }>
+  > {
     const scored = await Promise.all(
       vendorIds.map(async (vendorId) => {
         const factors = await this.getScoreFactors(vendorId, eventLat, eventLng);
         const score = this.computeScore(factors);
-        return { vendorId, score };
+        return { vendorId, score, factors };
       }),
     );
 
