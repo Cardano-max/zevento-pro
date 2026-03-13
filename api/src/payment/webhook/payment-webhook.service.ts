@@ -17,8 +17,12 @@ import { RazorpayService } from '../../subscription/razorpay.service';
  *   2. Parse payload, extract payment/order entities
  *   3. Idempotency check via webhook_events unique constraint (P2002 catch)
  *   4. Route by event type:
- *      - payment.captured -> enqueue BullMQ job for async commission processing
- *      - payment.failed -> update booking paymentStatus to FAILED
+ *      - payment.captured -> route by notes.type:
+ *          MARKETPLACE_SALE -> product-order-payment queue
+ *          default (BOOKING_COMMISSION) -> payment-processing queue
+ *      - payment.failed -> route by notes.type:
+ *          MARKETPLACE_SALE -> update ProductOrder FAILED + restore stock
+ *          default -> update Booking FAILED (existing behavior)
  *      - refund.processed -> update Transaction to REFUNDED
  *      - default -> log warning, mark webhook as PROCESSED
  *
@@ -33,6 +37,8 @@ export class PaymentWebhookService {
     private readonly prisma: PrismaService,
     private readonly razorpayService: RazorpayService,
     @InjectQueue('payment-processing') private readonly paymentQueue: Queue,
+    @InjectQueue('product-order-payment')
+    private readonly productOrderPaymentQueue: Queue,
   ) {}
 
   async handleWebhook(rawBody: string, signature: string) {
@@ -124,34 +130,54 @@ export class PaymentWebhookService {
   }
 
   /**
-   * payment.captured: Enqueue BullMQ job for async commission processing.
-   * Processing (commission calc, Transaction creation, payout trigger) happens in PaymentProcessor.
+   * payment.captured: Route to correct BullMQ queue based on notes.type.
+   *
+   * MARKETPLACE_SALE -> product-order-payment queue (OrderPaymentProcessor)
+   * default (BOOKING_COMMISSION or no type) -> payment-processing queue (PaymentProcessor)
    */
   private async handlePaymentCaptured(
     webhookEventId: string,
     paymentEntity: any,
   ) {
-    await this.paymentQueue.add(
-      'payment-captured',
-      {
-        webhookEventId,
-        paymentEntity,
-        orderNotes: paymentEntity.notes || {},
-      },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 60000 },
-      },
-    );
+    const notes = paymentEntity.notes || {};
+    const paymentType = notes.type;
 
-    this.logger.log(
-      `Enqueued payment-processing job for payment ${paymentEntity.id}`,
-    );
+    if (paymentType === 'MARKETPLACE_SALE') {
+      // Route to product order payment processing queue
+      await this.productOrderPaymentQueue.add(
+        'product-order-payment-captured',
+        { webhookEventId, paymentEntity, orderNotes: notes },
+        { attempts: 3, backoff: { type: 'exponential', delay: 60000 } },
+      );
+      this.logger.log(
+        `Enqueued product-order-payment job for payment ${paymentEntity.id}`,
+      );
+    } else {
+      // Default: route to booking payment processing (existing behavior)
+      await this.paymentQueue.add(
+        'payment-captured',
+        {
+          webhookEventId,
+          paymentEntity,
+          orderNotes: notes,
+        },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 60000 },
+        },
+      );
+      this.logger.log(
+        `Enqueued payment-processing job for payment ${paymentEntity.id}`,
+      );
+    }
   }
 
   /**
-   * payment.failed: Update booking paymentStatus to FAILED.
-   * Finds booking by razorpayOrderId from the payment entity.
+   * payment.failed: Route by notes.type.
+   *
+   * MARKETPLACE_SALE -> find ProductOrder by razorpayOrderId, set paymentStatus FAILED,
+   *                     restore stock via increment for each order item.
+   * default -> update Booking paymentStatus FAILED (existing behavior).
    */
   private async handlePaymentFailed(paymentEntity: any) {
     const orderId = paymentEntity.order_id;
@@ -160,22 +186,58 @@ export class PaymentWebhookService {
       return;
     }
 
-    const booking = await this.prisma.booking.findFirst({
-      where: { razorpayOrderId: orderId },
-    });
+    const notes = paymentEntity.notes || {};
+    const paymentType = notes.type;
 
-    if (booking) {
-      await this.prisma.booking.update({
-        where: { id: booking.id },
-        data: { paymentStatus: 'FAILED' },
+    if (paymentType === 'MARKETPLACE_SALE') {
+      // Find ProductOrder and restore stock
+      const productOrder = await this.prisma.productOrder.findFirst({
+        where: { razorpayOrderId: orderId },
+        include: { items: true },
       });
-      this.logger.log(
-        `Booking ${booking.id} payment status set to FAILED (order ${orderId})`,
-      );
+
+      if (productOrder) {
+        // Restore stock for each item
+        await this.prisma.$transaction(async (tx) => {
+          for (const item of productOrder.items) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+          await tx.productOrder.update({
+            where: { id: productOrder.id },
+            data: { paymentStatus: 'FAILED' },
+          });
+        });
+
+        this.logger.log(
+          `ProductOrder ${productOrder.id} payment FAILED — stock restored for ${productOrder.items.length} item(s) (order ${orderId})`,
+        );
+      } else {
+        this.logger.warn(
+          `No ProductOrder found for order ${orderId} in payment.failed event (MARKETPLACE_SALE)`,
+        );
+      }
     } else {
-      this.logger.warn(
-        `No booking found for order ${orderId} in payment.failed event`,
-      );
+      // Default: update booking paymentStatus to FAILED (existing behavior)
+      const booking = await this.prisma.booking.findFirst({
+        where: { razorpayOrderId: orderId },
+      });
+
+      if (booking) {
+        await this.prisma.booking.update({
+          where: { id: booking.id },
+          data: { paymentStatus: 'FAILED' },
+        });
+        this.logger.log(
+          `Booking ${booking.id} payment status set to FAILED (order ${orderId})`,
+        );
+      } else {
+        this.logger.warn(
+          `No booking found for order ${orderId} in payment.failed event`,
+        );
+      }
     }
   }
 
