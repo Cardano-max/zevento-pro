@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 5 (Payments and Commission Settlement) — Plan 1 of 3 complete. CommissionRate model, payment checkout, and client verification built.
+**Current focus:** Phase 5 (Payments and Commission Settlement) — Plan 2 of 3 complete. Payment webhook processing, commission calculation, and RazorpayX vendor payouts built.
 
 ## Current Position
 
 Phase: 5 of 7 (Payments and Commission Settlement)
-Plan: 1 of 3 in current phase
-Status: Plan 05-01 complete — CommissionRate table seeded, PaymentModule with Razorpay order creation and signature verification. Ready for Plan 05-02 (webhook processing + payouts).
-Last activity: 2026-03-13 — Phase 5 Plan 01 complete
+Plan: 2 of 3 in current phase
+Status: Plan 05-02 complete — Payment webhook with P2002 idempotency, BullMQ payment processor for commission splits, PayoutService with RazorpayX, booking-completion payout trigger. Ready for Plan 05-03 (admin payment management).
+Last activity: 2026-03-13 — Phase 5 Plan 02 complete
 
-Progress: [██████░░░░] 62% (13/21 plans complete)
+Progress: [██████░░░░] 67% (14/21 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 11 min
-- Total execution time: 2.38 hours
+- Total plans completed: 14
+- Average duration: 10 min
+- Total execution time: 2.46 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [██████░░░░] 62% (13/21 plans complete)
 | 02-vendor-onboarding-subscriptions | 3/3 | 18 min | 6 min |
 | 03-lead-routing-engine | 3/3 | 13 min | 4 min |
 | 04-vendor-crm-and-booking-flow | 3/3 | 39 min | 13 min |
-| 05-payments-and-commission-settlement | 1/3 | 5 min | 5 min |
+| 05-payments-and-commission-settlement | 2/3 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (13 min), 04-02 (14 min), 04-03 (12 min), 05-01 (5 min)
-- Trend: Phase 5 Plan 01 fast at 5 min — schema evolution + module wiring are well-practiced patterns
+- Last 5 plans: 04-02 (14 min), 04-03 (12 min), 05-01 (5 min), 05-02 (5 min)
+- Trend: Phase 5 Plans 01-02 both 5 min — webhook/processor/payout patterns well-practiced
 
 *Updated after each plan completion*
 
@@ -106,6 +106,11 @@ Recent decisions affecting current work:
 - [05-01]: Transaction.vendorSubscriptionId made optional with onDelete SetNull — enables BOOKING_COMMISSION transactions without subscription link
 - [05-01]: RazorpayService.keySecret stored as private field for HMAC payment signature validation
 - [05-01]: Default commission rate 500 bps (5%) seeded as global fallback — more specific rates addable by admin in Plan 05-03
+- [05-02]: Payment processing is async via BullMQ — webhook enqueues job, processor handles commission calc and Transaction creation (not synchronous in webhook handler)
+- [05-02]: Payout triggered only on booking COMPLETED transition — not on payment capture; prevents paying vendor before service delivery (Pitfall 5)
+- [05-02]: PayoutService uses raw HTTP for RazorpayX Composite Payout API — not in Razorpay SDK (Pitfall 1); X-Payout-Idempotency header mandatory (Pitfall 7)
+- [05-02]: Missing bank details return PENDING_BANK_DETAILS status without throwing — payout retryable when vendor adds bank info
+- [05-02]: PayoutProcessor double-checks booking COMPLETED status before calling PayoutService — defense in depth against race conditions
 
 ### Pending Todos
 
@@ -123,5 +128,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Completed 05-01-PLAN.md — CommissionRate + PaymentModule. Ready for 05-02 (webhook processing + payouts).
+Stopped at: Completed 05-02-PLAN.md — Payment webhook processing, commission calculation, RazorpayX payouts. Ready for 05-03 (admin payment management).
 Resume file: None
