@@ -108,12 +108,12 @@ Plans:
   3. Duplicate webhook events are detected and rejected using a unique constraint on (payment_id, event_type) — the same payment is never processed twice
   4. Admin can view the full payment log filterable by date, vendor, and transaction type, and can initiate refunds for disputed bookings
   5. All revenue transactions are recorded in a typed ledger (SUBSCRIPTION, LEAD_PURCHASE, BOOKING_COMMISSION, MARKETPLACE_SALE) enabling per-stream revenue reporting
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Razorpay Orders API integration — booking payment flow, commission rate table, split calculation, Razorpay signature verification on all webhooks
-- [ ] 05-02: Webhook idempotency and payouts — webhook_events table with unique constraint, BullMQ payment processing workers, vendor payout via Razorpay Payouts (RazorpayX), transactions ledger
-- [ ] 05-03: Admin payment management — payment log view with filters, refund initiation, commission and payout reconciliation, SUBS-04/SUBS-05 margin tracking
+- [ ] 05-01-PLAN.md — Schema evolution (CommissionRate, Transaction generalization, Booking payment fields, VendorProfile bank details), CommissionService with specificity cascade, PaymentService with Razorpay Orders API, client payment verification
+- [ ] 05-02-PLAN.md — Payment webhook at /webhooks/razorpay/payment with idempotency, BullMQ payment processor (commission split + Transaction creation), PayoutService (RazorpayX Composite Payout API with dev mock), payout triggered on booking COMPLETED
+- [ ] 05-03-PLAN.md — Admin payment log with date/vendor/type filters, refund initiation via Razorpay SDK, revenue reconciliation by stream, commission rate CRUD for admin
 
 ---
 
@@ -160,7 +160,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Foundation | 3/3 | Complete | 2026-03-05 |
 | 2. Vendor Onboarding and Subscriptions | 3/3 | Complete | 2026-03-06 |
 | 3. Lead Routing Engine | 3/3 | Complete | 2026-03-07 |
-| 4. Vendor CRM and Booking Flow | 0/3 | Planned | - |
+| 4. Vendor CRM and Booking Flow | 3/3 | Complete | 2026-03-08 |
 | 5. Payments and Commission Settlement | 0/3 | Not started | - |
 | 6. B2B Product Marketplace | 0/3 | Not started | - |
 | 7. Analytics and Admin Hardening | 0/2 | Not started | - |
