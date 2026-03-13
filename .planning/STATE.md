@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 6 (B2B Product Marketplace) in progress. Plan 02 complete: B2B order placement, atomic stock reservation, Razorpay checkout with MARKETPLACE_SALE notes, webhook routing by notes.type, and OrderPaymentProcessor.
+**Current focus:** Phase 6 (B2B Product Marketplace) COMPLETE. All 3 plans done: ProductModule (06-01), OrderModule with payment (06-02), order lifecycle state machine (06-03). Phase 7 next.
 
 ## Current Position
 
-Phase: 6 of 7 (B2B Product Marketplace) -- IN PROGRESS
-Plan: 2 of 3 in current phase
-Status: Phase 06 Plan 02 complete — OrderModule with atomic stock reservation, Razorpay product checkout, MARKETPLACE_SALE webhook routing, OrderPaymentProcessor for commission settlement. Plan 03 next.
-Last activity: 2026-03-13 — Phase 6 Plan 02 complete
+Phase: 6 of 7 (B2B Product Marketplace) -- COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase 06 Plan 03 complete — Order lifecycle state machine (PENDING→CONFIRMED→DISPATCHED→DELIVERED), TOCTOU-safe atomic transitions, stock restore on cancel, push notifications. Phase 6 fully done.
+Last activity: 2026-03-13 — Phase 6 Plan 03 complete
 
-Progress: [███████░░░] 76% (16/21 plans complete)
+Progress: [████████░░] 81% (17/21 plans complete)
 
 ## Performance Metrics
 
@@ -32,11 +32,11 @@ Progress: [███████░░░] 76% (16/21 plans complete)
 | 03-lead-routing-engine | 3/3 | 13 min | 4 min |
 | 04-vendor-crm-and-booking-flow | 3/3 | 39 min | 13 min |
 | 05-payments-and-commission-settlement | 3/3 | 15 min | 5 min |
-| 06-b2b-product-marketplace | 2/3 | ~29 min | ~15 min |
+| 06-b2b-product-marketplace | 3/3 | ~32 min | ~11 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (12 min), 05-01 (5 min), 05-02 (5 min), 05-03 (5 min)
-- Trend: Phase 5 all three plans at 5 min — admin CRUD and payment patterns well-practiced
+- Last 5 plans: 05-02 (5 min), 05-03 (5 min), 06-01 (20 min), 06-02 (8 min), 06-03 (3 min)
+- Trend: Phase 6 Plans 02-03 at 8 and 3 min — state machine pattern from Phase 4 carried over cleanly
 
 *Updated after each plan completion*
 
@@ -122,6 +122,8 @@ Recent decisions affecting current work:
 - [06-02]: Commission rate uses getRate(vendorId, null) for product orders — ProductCategory is separate from EventCategory (Pitfall 3)
 - [06-02]: Webhook routes by notes.type — MARKETPLACE_SALE to product-order-payment queue; default to payment-processing (backward-compatible)
 - [06-02]: Payment failure for MARKETPLACE_SALE restores stock atomically via $transaction before setting paymentStatus FAILED
+- [Phase 06-03]: [06-03]: cancelOrder delegates to transitionOrderStatus internally — single state machine, no duplication
+- [Phase 06-03]: [06-03]: Stock restore inside same $transaction as updateMany — prevents stock leak on mid-transaction failure
 
 ### Pending Todos
 
@@ -139,5 +141,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Completed 06-02-PLAN.md — OrderModule with atomic stock reservation, Razorpay product checkout, MARKETPLACE_SALE webhook routing, OrderPaymentProcessor. Phase 6 Plan 03 next.
+Stopped at: Completed 06-03-PLAN.md — Order lifecycle state machine with PENDING→CONFIRMED→DISPATCHED→DELIVERED transitions, TOCTOU-safe atomic updateMany, stock restore on CANCELLED, push notifications. Phase 6 complete. Phase 7 next.
 Resume file: None
