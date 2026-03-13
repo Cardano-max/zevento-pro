@@ -2,11 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RazorpayService } from '../subscription/razorpay.service';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 import { InitiateRefundDto } from './dto/initiate-refund.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
 import {
@@ -14,14 +17,18 @@ import {
   UpdateCommissionRateDto,
 } from './dto/manage-commission.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
-import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { MarketStatusDto } from './dto/market-status.dto';
 import { KycAction, ReviewKycDto } from './dto/review-kyc.dto';
+import { RoutingOverrideDto } from './dto/routing-override.dto';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly razorpayService: RazorpayService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async assignRole(
@@ -928,5 +935,132 @@ export class AdminService {
       revenueByStream,
       activeVendorCount,
     };
+  }
+
+  // ──────────────────────────────────────────────────
+  // Lead Routing Audit & Override (Phase 7)
+  // ──────────────────────────────────────────────────
+
+  async getLeadRoutingTrace(leadId: string) {
+    const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
+    if (!lead) throw new NotFoundException(`Lead ${leadId} not found`);
+
+    const [traces, assignments] = await Promise.all([
+      this.prisma.leadRoutingTrace.findMany({
+        where: { leadId },
+        include: { vendor: { select: { id: true, businessName: true } } },
+        orderBy: [{ selected: 'desc' }, { score: 'desc' }],
+      }),
+      this.prisma.leadAssignment.findMany({
+        where: { leadId },
+        select: { vendorId: true, status: true, notifiedAt: true },
+      }),
+    ]);
+
+    return { leadId, traces, assignments };
+  }
+
+  async overrideRouting(
+    leadId: string,
+    dto: RoutingOverrideDto,
+    adminId: string,
+  ) {
+    const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
+    if (!lead) throw new NotFoundException(`Lead ${leadId} not found`);
+
+    if (['BOOKED', 'COMPLETED', 'CANCELLED'].includes(lead.status)) {
+      throw new BadRequestException(
+        `Cannot override routing for lead with status ${lead.status}`,
+      );
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.leadAssignment.updateMany({
+        where: { leadId, status: { in: ['PENDING', 'NOTIFIED'] } },
+        data: { status: 'CANCELLED' },
+      });
+
+      await tx.leadAssignment.create({
+        data: {
+          leadId,
+          vendorId: dto.vendorId,
+          score: null,
+          status: 'PENDING',
+        },
+      });
+
+      await tx.leadRoutingTrace.upsert({
+        where: { leadId_vendorId: { leadId, vendorId: dto.vendorId } },
+        create: {
+          leadId,
+          vendorId: dto.vendorId,
+          score: 0,
+          scoreFactors: {},
+          selected: true,
+          overriddenAt: new Date(),
+          overriddenBy: adminId,
+          overrideReason: dto.reason ?? 'Admin override',
+        },
+        update: {
+          selected: true,
+          overriddenAt: new Date(),
+          overriddenBy: adminId,
+          overrideReason: dto.reason ?? 'Admin override',
+        },
+      });
+
+      return { success: true, leadId, overrideVendorId: dto.vendorId };
+    });
+
+    // Notify override vendor via push (non-blocking -- fire and forget)
+    this.notificationService
+      .sendPushToVendor(dto.vendorId, {
+        leadId,
+        eventType: lead.eventType,
+        city: lead.city,
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Override push notification failed: ${err.message}`,
+        ),
+      );
+
+    return result;
+  }
+
+  // ──────────────────────────────────────────────────
+  // Market Status Management (Phase 7)
+  // ──────────────────────────────────────────────────
+
+  async listMarkets() {
+    return this.prisma.market.findMany({
+      select: {
+        id: true,
+        city: true,
+        state: true,
+        status: true,
+        launchDate: true,
+      },
+      orderBy: { city: 'asc' },
+    });
+  }
+
+  async updateMarketStatus(marketId: string, dto: MarketStatusDto) {
+    const market = await this.prisma.market.findUnique({
+      where: { id: marketId },
+    });
+    if (!market) throw new NotFoundException(`Market ${marketId} not found`);
+
+    return this.prisma.market.update({
+      where: { id: marketId },
+      data: { status: dto.status },
+      select: {
+        id: true,
+        city: true,
+        state: true,
+        status: true,
+        launchDate: true,
+      },
+    });
   }
 }

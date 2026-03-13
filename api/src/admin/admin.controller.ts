@@ -14,6 +14,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 import { InitiateRefundDto } from './dto/initiate-refund.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
 import {
@@ -22,8 +23,9 @@ import {
 } from './dto/manage-commission.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { AssignRoleDto } from './dto/manage-role.dto';
-import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { MarketStatusDto } from './dto/market-status.dto';
 import { ReviewKycDto } from './dto/review-kyc.dto';
+import { RoutingOverrideDto } from './dto/routing-override.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -288,5 +290,40 @@ export class AdminController {
   @Get('analytics/dashboard')
   async getAnalyticsDashboard(@Query() query: AnalyticsQueryDto) {
     return this.adminService.getAnalyticsDashboard(query);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Lead Routing Audit & Override (Phase 7)
+  // ──────────────────────────────────────────────────
+
+  @Get('leads/:leadId/routing-trace')
+  async getLeadRoutingTrace(@Param('leadId') leadId: string) {
+    return this.adminService.getLeadRoutingTrace(leadId);
+  }
+
+  @Patch('leads/:leadId/routing-override')
+  async overrideRouting(
+    @Param('leadId') leadId: string,
+    @Body() dto: RoutingOverrideDto,
+    @CurrentUser() currentUser: { id: string },
+  ) {
+    return this.adminService.overrideRouting(leadId, dto, currentUser.id);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Market Status Management (Phase 7)
+  // ──────────────────────────────────────────────────
+
+  @Get('markets')
+  async listMarkets() {
+    return this.adminService.listMarkets();
+  }
+
+  @Patch('markets/:marketId/status')
+  async updateMarketStatus(
+    @Param('marketId') marketId: string,
+    @Body() dto: MarketStatusDto,
+  ) {
+    return this.adminService.updateMarketStatus(marketId, dto);
   }
 }
