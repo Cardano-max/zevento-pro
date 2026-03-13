@@ -16,6 +16,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
 import { InitiateRefundDto } from './dto/initiate-refund.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
+import {
+  CreateCommissionRateDto,
+  UpdateCommissionRateDto,
+} from './dto/manage-commission.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { AssignRoleDto } from './dto/manage-role.dto';
 import { ReviewKycDto } from './dto/review-kyc.dto';
@@ -244,5 +248,35 @@ export class AdminController {
   @Get('payments/reconciliation')
   async getReconciliation() {
     return this.adminService.getReconciliation();
+  }
+
+  // ──────────────────────────────────────────────────
+  // Commission Rate Management (Phase 5)
+  // ──────────────────────────────────────────────────
+
+  @Post('commission-rates')
+  async createCommissionRate(@Body() dto: CreateCommissionRateDto) {
+    return this.adminService.createCommissionRate(dto);
+  }
+
+  @Patch('commission-rates/:id')
+  async updateCommissionRate(
+    @Param('id') id: string,
+    @Body() dto: UpdateCommissionRateDto,
+  ) {
+    return this.adminService.updateCommissionRate(id, dto);
+  }
+
+  @Get('commission-rates')
+  async listCommissionRates(
+    @Query('categoryId') categoryId?: string,
+    @Query('vendorRole') vendorRole?: string,
+  ) {
+    return this.adminService.listCommissionRates(categoryId, vendorRole);
+  }
+
+  @Delete('commission-rates/:id')
+  async deleteCommissionRate(@Param('id') id: string) {
+    return this.adminService.deleteCommissionRate(id);
   }
 }

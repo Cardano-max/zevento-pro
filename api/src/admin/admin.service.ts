@@ -9,6 +9,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RazorpayService } from '../subscription/razorpay.service';
 import { InitiateRefundDto } from './dto/initiate-refund.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/manage-category.dto';
+import {
+  CreateCommissionRateDto,
+  UpdateCommissionRateDto,
+} from './dto/manage-commission.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/manage-plan.dto';
 import { KycAction, ReviewKycDto } from './dto/review-kyc.dto';
 
@@ -756,5 +760,98 @@ export class AdminService {
         totalPaise: p._sum.netPayoutPaise,
       })),
     };
+  }
+
+  // ──────────────────────────────────────────────────
+  // Commission Rate Management (Phase 5)
+  // ──────────────────────────────────────────────────
+
+  async createCommissionRate(dto: CreateCommissionRateDto) {
+    if (dto.categoryId) {
+      const category = await this.prisma.eventCategory.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!category) {
+        throw new NotFoundException(
+          `Category ${dto.categoryId} not found`,
+        );
+      }
+    }
+
+    return this.prisma.commissionRate.create({
+      data: {
+        categoryId: dto.categoryId || null,
+        vendorRole: dto.vendorRole || null,
+        rateBps: dto.rateBps,
+        effectiveFrom: dto.effectiveFrom
+          ? new Date(dto.effectiveFrom)
+          : new Date(),
+        effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null,
+      },
+      include: {
+        category: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async updateCommissionRate(id: string, dto: UpdateCommissionRateDto) {
+    const rate = await this.prisma.commissionRate.findUnique({
+      where: { id },
+    });
+
+    if (!rate) {
+      throw new NotFoundException(`Commission rate ${id} not found`);
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (dto.rateBps !== undefined) updates.rateBps = dto.rateBps;
+    if (dto.effectiveTo !== undefined)
+      updates.effectiveTo = new Date(dto.effectiveTo);
+
+    return this.prisma.commissionRate.update({
+      where: { id },
+      data: updates,
+      include: {
+        category: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async listCommissionRates(categoryId?: string, vendorRole?: string) {
+    const where: Record<string, unknown> = {};
+    if (categoryId) where.categoryId = categoryId;
+    if (vendorRole) where.vendorRole = vendorRole;
+
+    return this.prisma.commissionRate.findMany({
+      where,
+      orderBy: [
+        { categoryId: { sort: 'desc', nulls: 'last' } },
+        { vendorRole: { sort: 'desc', nulls: 'last' } },
+        { effectiveFrom: 'desc' },
+      ],
+      include: {
+        category: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async deleteCommissionRate(id: string) {
+    const rate = await this.prisma.commissionRate.findUnique({
+      where: { id },
+    });
+
+    if (!rate) {
+      throw new NotFoundException(`Commission rate ${id} not found`);
+    }
+
+    // Soft-delete: set effectiveTo to now rather than hard delete
+    // Rates may be referenced by locked booking commissions
+    return this.prisma.commissionRate.update({
+      where: { id },
+      data: { effectiveTo: new Date() },
+      include: {
+        category: { select: { id: true, name: true } },
+      },
+    });
   }
 }
