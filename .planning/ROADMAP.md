@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Admin can assign, change, or revoke a user's role through the admin panel
   4. OTP is rate-limited: after 5 failed attempts in one hour the phone is blocked, and a new OTP cannot be requested until the window resets
   5. Customer phone number is never visible to any vendor until the customer has given explicit consent and the contact reveal event is logged in the audit trail
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 01-01: Monorepo scaffolding, Docker Compose, CI/CD pipeline, Prisma schema (users, user_roles, markets, consent_logs, webhook_events)
@@ -142,11 +142,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Admin can view a live analytics dashboard showing leads per city, conversion rates (inquiry to booking), total revenue by stream, and active vendor count — data reflects activity from the previous 24 hours
   2. Admin can inspect the full lead routing log for any lead — see which vendors were scored, what scores they received, which three were assigned, and why — and can manually override the routing for a specific lead
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: Admin analytics dashboard — leads/city, conversion funnel, revenue by stream (SUBSCRIPTION/LEAD_PURCHASE/BOOKING_COMMISSION/MARKETPLACE_SALE), active vendor metrics; read-optimized queries (materialized views or read replica)
-- [ ] 07-02: Lead routing audit log and manual override — per-lead scoring trace view, admin override UI, market status management (Surat/Ahmedabad active; future city gates)
+- [ ] 07-01-PLAN.md — Admin analytics dashboard: leadsPerCity, conversionFunnel, revenueByStream, activeVendorCount; parallel Prisma groupBy queries
+- [ ] 07-02-PLAN.md — LeadRoutingTrace schema migration, scoreVendors factors extension, RoutingService trace writes, routing audit + override + market status admin endpoints
 
 ---
 
