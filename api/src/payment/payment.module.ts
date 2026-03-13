@@ -7,6 +7,8 @@ import { PaymentService } from './payment.service';
 import { PaymentWebhookController } from './webhook/payment-webhook.controller';
 import { PaymentWebhookService } from './webhook/payment-webhook.service';
 import { PaymentProcessor } from './processor/payment.processor';
+import { PayoutProcessor } from './processor/payout.processor';
+import { PayoutService } from './payout.service';
 
 @Module({
   imports: [
@@ -22,7 +24,9 @@ import { PaymentProcessor } from './processor/payment.processor';
     PaymentService,
     PaymentWebhookService,
     PaymentProcessor,
+    PayoutProcessor,
+    PayoutService,
   ],
-  exports: [PaymentService, CommissionService],
+  exports: [PaymentService, CommissionService, PayoutService],
 })
 export class PaymentModule {}

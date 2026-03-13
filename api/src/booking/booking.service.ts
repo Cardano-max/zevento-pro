@@ -6,6 +6,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockDateDto } from './dto/block-date.dto';
@@ -40,6 +42,7 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    @InjectQueue('vendor-payout') private readonly payoutQueue: Queue,
   ) {}
 
   /**
@@ -138,6 +141,37 @@ export class BookingService {
         });
       }
     });
+
+    // Trigger vendor payout when booking reaches COMPLETED
+    // Payout happens via BullMQ to avoid blocking the transition response
+    // Only triggers if a BOOKING_COMMISSION transaction exists (payment was captured)
+    if (dto.status === 'COMPLETED') {
+      const tx = await this.prisma.transaction.findFirst({
+        where: {
+          bookingId: booking.id,
+          type: 'BOOKING_COMMISSION',
+          status: 'PAID',
+        },
+      });
+      if (tx && tx.netPayoutPaise) {
+        await this.payoutQueue.add(
+          'vendor-payout',
+          {
+            bookingId: booking.id,
+            vendorId: booking.vendorId,
+            netPayoutPaise: tx.netPayoutPaise,
+            razorpayPaymentId: tx.razorpayPaymentId,
+          },
+          {
+            attempts: 5,
+            backoff: { type: 'exponential', delay: 60000 },
+          },
+        );
+        this.logger.log(
+          `Vendor payout job enqueued for booking ${booking.id}: ${tx.netPayoutPaise} paise`,
+        );
+      }
+    }
 
     // Send push notification to customer after successful transition
     const pushMessage = BOOKING_PUSH_MESSAGES[dto.status];
