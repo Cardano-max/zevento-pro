@@ -123,3 +123,18 @@ export enum PayoutStatus {
   FAILED = 'FAILED',
   PENDING_BANK_DETAILS = 'PENDING_BANK_DETAILS',
 }
+
+// Phase 6: B2B Product Marketplace
+
+export enum ProductOrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  DISPATCHED = 'DISPATCHED',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum FulfillmentSource {
+  SUPPLIER = 'SUPPLIER',
+  ZEVENTO = 'ZEVENTO',
+}

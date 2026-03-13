@@ -129,7 +129,37 @@ async function main() {
     );
   }
 
+  // Seed Product Categories (Phase 6)
+  await seedProductCategories();
+
   console.log('Seed complete.');
+}
+
+async function seedProductCategories() {
+  const categories = [
+    { name: 'Balloons', slug: 'balloons', sortOrder: 1 },
+    { name: 'Ribbons & Bows', slug: 'ribbons-bows', sortOrder: 2 },
+    { name: 'Tableware', slug: 'tableware', sortOrder: 3 },
+    { name: 'Decorative Lights', slug: 'decorative-lights', sortOrder: 4 },
+    { name: 'Banners & Backdrops', slug: 'banners-backdrops', sortOrder: 5 },
+    { name: 'Party Favors', slug: 'party-favors', sortOrder: 6 },
+    { name: 'Floral Supplies', slug: 'floral-supplies', sortOrder: 7 },
+    { name: 'Craft & DIY', slug: 'craft-diy', sortOrder: 8 },
+  ];
+
+  for (const cat of categories) {
+    const result = await prisma.productCategory.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: {
+        name: cat.name,
+        slug: cat.slug,
+        isActive: true,
+        sortOrder: cat.sortOrder,
+      },
+    });
+    console.log(`  Product Category: ${result.name} (${result.id})`);
+  }
 }
 
 main()

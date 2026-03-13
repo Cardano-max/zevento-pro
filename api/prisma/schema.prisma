@@ -23,6 +23,7 @@ model User {
   deviceTokens  DeviceToken[]
   bookings      Booking[]      @relation("CustomerBookings")
   reviews       Review[]       @relation("CustomerReviews")
+  productOrders ProductOrder[] @relation("BuyerProductOrders")
 
   @@map("users")
 }
@@ -131,6 +132,9 @@ model VendorProfile {
   bankAccountName   String?  @map("bank_account_name") @db.VarChar(200)
   bankAccountNumber String?  @map("bank_account_number") @db.VarChar(30)
   bankIfsc          String?  @map("bank_ifsc") @db.VarChar(11)
+  // Phase 6: B2B product marketplace
+  products          Product[]
+  productOrders     ProductOrder[]  @relation("VendorProductOrders")
 
   @@map("vendor_profiles")
 }
@@ -265,11 +269,15 @@ model Transaction {
   paidAt               DateTime?           @map("paid_at")
   createdAt            DateTime            @default(now()) @map("created_at")
 
+  productOrderId       String?             @map("product_order_id") @db.Uuid
+
   vendorSubscription   VendorSubscription? @relation(fields: [vendorSubscriptionId], references: [id], onDelete: SetNull)
   booking              Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  productOrder         ProductOrder?       @relation(fields: [productOrderId], references: [id], onDelete: SetNull)
 
   @@index([vendorSubscriptionId])
   @@index([bookingId])
+  @@index([productOrderId])
   @@index([type])
   @@index([status])
   @@index([createdAt])
@@ -514,4 +522,125 @@ model CommissionRate {
 
   @@index([categoryId, vendorRole])
   @@map("commission_rates")
+}
+
+// ──────────────────────────────────────────────────
+// Phase 6: B2B Product Marketplace
+// ──────────────────────────────────────────────────
+
+model ProductCategory {
+  id          String            @id @default(uuid()) @db.Uuid
+  name        String            @unique @db.VarChar(100)
+  slug        String            @unique @db.VarChar(100)
+  description String?           @db.Text
+  isActive    Boolean           @default(true) @map("is_active")
+  sortOrder   Int               @default(0) @map("sort_order")
+  parentId    String?           @map("parent_id") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  parent      ProductCategory?  @relation("ProductCategoryTree", fields: [parentId], references: [id])
+  children    ProductCategory[] @relation("ProductCategoryTree")
+  products    Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id                String            @id @default(uuid()) @db.Uuid
+  vendorId          String            @map("vendor_id") @db.Uuid
+  categoryId        String            @map("category_id") @db.Uuid
+  name              String            @db.VarChar(200)
+  description       String?           @db.Text
+  pricePaise        Int               @map("price_paise")
+  stock             Int               @default(0)
+  lowStockThreshold Int               @default(5) @map("low_stock_threshold")
+  moq               Int               @default(1)
+  isActive          Boolean           @default(true) @map("is_active")
+  fulfillmentSource String            @default("SUPPLIER") @map("fulfillment_source") @db.VarChar(20)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  vendor            VendorProfile     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category          ProductCategory   @relation(fields: [categoryId], references: [id])
+  images            ProductImage[]
+  orderItems        ProductOrderItem[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([isActive, categoryId])
+  @@map("products")
+}
+
+model ProductImage {
+  id                 String   @id @default(uuid()) @db.Uuid
+  productId          String   @map("product_id") @db.Uuid
+  cloudinaryPublicId String   @map("cloudinary_public_id") @db.VarChar(255)
+  cloudinaryUrl      String   @map("cloudinary_url") @db.Text
+  sortOrder          Int      @default(0) @map("sort_order")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductOrder {
+  id                String               @id @default(uuid()) @db.Uuid
+  buyerId           String               @map("buyer_id") @db.Uuid
+  vendorId          String               @map("vendor_id") @db.Uuid
+  status            String               @default("PENDING") @db.VarChar(20)
+  totalPaise        Int                  @map("total_paise")
+  razorpayOrderId   String?              @map("razorpay_order_id") @db.VarChar(50)
+  paymentStatus     String?              @map("payment_status") @db.VarChar(20)
+  commissionRateBps Int?                 @map("commission_rate_bps")
+  shippingAddress   String?              @map("shipping_address") @db.Text
+  note              String?              @db.Text
+  confirmedAt       DateTime?            @map("confirmed_at")
+  dispatchedAt      DateTime?            @map("dispatched_at")
+  deliveredAt       DateTime?            @map("delivered_at")
+  cancelledAt       DateTime?            @map("cancelled_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  buyer             User                 @relation("BuyerProductOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  vendor            VendorProfile        @relation("VendorProductOrders", fields: [vendorId], references: [id], onDelete: Cascade)
+  items             ProductOrderItem[]
+  statusHistory     OrderStatusHistory[]
+  transactions      Transaction[]
+
+  @@index([buyerId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("product_orders")
+}
+
+model ProductOrderItem {
+  id         String       @id @default(uuid()) @db.Uuid
+  orderId    String       @map("order_id") @db.Uuid
+  productId  String       @map("product_id") @db.Uuid
+  quantity   Int
+  unitPaise  Int          @map("unit_paise")
+  totalPaise Int          @map("total_paise")
+
+  order      ProductOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product      @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("product_order_items")
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(uuid()) @db.Uuid
+  orderId    String       @map("order_id") @db.Uuid
+  fromStatus String?      @map("from_status") @db.VarChar(20)
+  toStatus   String       @map("to_status") @db.VarChar(20)
+  note       String?      @db.Text
+  changedAt  DateTime     @default(now()) @map("changed_at")
+
+  order      ProductOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_status_history")
 }
