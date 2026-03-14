@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 07.2 in progress — Enterprise Extension: feed, favorites, reports backend complete (plan 1/N).
+**Current focus:** Phase 07.2 in progress — Enterprise Extension: feed/favorites backend + customer web pages complete (plans 1-2 done).
 
 ## Current Position
 
 Phase: 07.2 (Zavento Enterprise Extension)
-Plan: 1 complete in current phase
-Status: Phase 07.2 Plan 01 complete — FeedPost, FeedComment, FavoriteVendor, Report schema extensions + full REST API modules (feed, favorites, reports, admin moderation).
-Last activity: 2026-03-15 — Completed 07.2-01: enterprise backend feed/favorites/reports API
+Plan: 2 complete in current phase
+Status: Phase 07.2 Plan 02 complete — Social Feed page, Favorites page, Inbox page, vendor detail favorites toggle, navbar Community+Saved links, home feed preview.
+Last activity: 2026-03-15 — Completed 07.2-02: customer web social feed, favorites, inbox pages
 
 Progress: [██████████] 100% (20/20 original plans + 07.2-01 complete)
 
@@ -142,6 +142,9 @@ Recent decisions affecting current work:
 - [07.2-01]: Favorites use composite unique constraint [customerId, vendorId] for O(1) idempotency checks
 - [07.2-01]: GET /feed is fully public (no JwtAuthGuard) to maximize discoverability
 - [07.2-01]: Prisma generate run manually after schema update since DB unavailable locally (Render hosted)
+- [07.2-02]: Feed page public (no auth to view); POST requires auth with router.push to /login?redirect
+- [07.2-02]: Favorites check on vendor detail uses GET /customer/favorites/:id/check — graceful no-op if endpoint missing
+- [07.2-02]: Home feed preview silently swallows API errors so home page never breaks
 
 ### Pending Todos
 
@@ -164,6 +167,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13
-Stopped at: Completed 07-02-PLAN.md — All 7 phases complete. LeadRoutingTrace audit trail, admin routing override, market status management. Full platform backend delivered.
+Last session: 2026-03-15
+Stopped at: Completed 07.2-02-PLAN.md — Customer web social feed, favorites, inbox pages + navbar updates + home preview.
 Resume file: None
