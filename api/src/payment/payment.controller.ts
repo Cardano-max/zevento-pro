@@ -6,6 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,6 +23,8 @@ import { PaymentService } from './payment.service';
  * POST /payments/orders  — Create a Razorpay order for a confirmed booking
  * POST /payments/verify  — Verify payment signature from client Razorpay Checkout callback
  */
+@ApiTags('Payments')
+@ApiBearerAuth('JWT')
 @Controller('payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('CUSTOMER')

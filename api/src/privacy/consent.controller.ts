@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ConsentService } from './consent.service';
@@ -24,6 +25,8 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+@ApiTags('Privacy')
+@ApiBearerAuth('JWT')
 @Controller('privacy')
 @UseGuards(JwtAuthGuard)
 export class ConsentController {

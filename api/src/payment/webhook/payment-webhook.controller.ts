@@ -6,6 +6,7 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { PaymentWebhookService } from './payment-webhook.service';
 
 /**
@@ -17,6 +18,7 @@ import { PaymentWebhookService } from './payment-webhook.service';
  * - Always returns 200 to prevent Razorpay retry storms (existing pattern)
  * - Signature verification handled inside the service
  */
+@ApiTags('Webhooks')
 @Controller('webhooks/razorpay')
 export class PaymentWebhookController {
   private readonly logger = new Logger(PaymentWebhookController.name);

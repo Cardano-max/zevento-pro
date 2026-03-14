@@ -6,8 +6,10 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SubscriptionWebhookService } from './subscription-webhook.service';
 
+@ApiTags('Webhooks')
 @Controller('webhooks/razorpay')
 export class SubscriptionWebhookController {
   private readonly logger = new Logger(SubscriptionWebhookController.name);

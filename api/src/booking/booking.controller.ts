@@ -14,6 +14,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -38,6 +39,8 @@ import { TransitionStatusDto } from './dto/transition-status.dto';
  * Vendor earnings endpoint (VENDOR role only):
  *   GET /vendor/earnings             — earnings dashboard
  */
+@ApiTags('Bookings')
+@ApiBearerAuth('JWT')
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BookingController {

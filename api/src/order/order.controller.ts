@@ -12,6 +12,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -36,6 +37,8 @@ import { TransitionOrderStatusDto } from './dto/transition-order-status.dto';
  * POST  /orders/:id/cancel     - Cancel a PENDING or CONFIRMED order
  * PATCH /orders/:id/status     - Supplier advances order through lifecycle
  */
+@ApiTags('Orders')
+@ApiBearerAuth('JWT')
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OrderController {

@@ -15,6 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -63,6 +64,8 @@ function documentFileFilter(
   callback(null, true);
 }
 
+@ApiTags('Vendor Profile')
+@ApiBearerAuth('JWT')
 @Controller('vendor/profile')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('PLANNER', 'SUPPLIER')

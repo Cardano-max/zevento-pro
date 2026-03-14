@@ -15,6 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -42,6 +43,8 @@ function imageFileFilter(
   callback(null, true);
 }
 
+@ApiTags('Products')
+@ApiBearerAuth('JWT')
 @Controller('products')
 @UseGuards(JwtAuthGuard, RolesGuard, VendorOwnerGuard)
 @Roles('SUPPLIER')

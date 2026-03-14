@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -30,6 +31,8 @@ import { QuoteService } from './quote.service';
  *   GET    /leads/:leadId/quotes       — list SUBMITTED quotes for comparison
  *   POST   /quotes/:id/accept          — accept one quote, creates Booking
  */
+@ApiTags('Quotes')
+@ApiBearerAuth('JWT')
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class QuoteController {

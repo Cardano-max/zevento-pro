@@ -14,6 +14,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -33,6 +34,8 @@ import { ReviewService } from './review.service';
  * Public endpoints:
  *   GET /vendor/:vendorId/reviews      — Public paginated review list (no auth)
  */
+@ApiTags('Reviews')
+@ApiBearerAuth('JWT')
 @Controller()
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}

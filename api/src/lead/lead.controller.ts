@@ -9,12 +9,15 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { LeadService } from './lead.service';
 
+@ApiTags('Leads')
+@ApiBearerAuth('JWT')
 @Controller('leads')
 @UseGuards(JwtAuthGuard)
 export class LeadController {
