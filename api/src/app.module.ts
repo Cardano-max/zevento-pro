@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CustomerModule } from './customer/customer.module';
+import { FeedModule } from './feed/feed.module';
 import { InboxModule } from './inbox/inbox.module';
 import { LeadModule } from './lead/lead.module';
 import { QuoteModule } from './quote/quote.module';
@@ -15,6 +16,7 @@ import { ProductModule } from './product/product.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { RedisModule } from './redis/redis.module';
+import { ReportModule } from './report/report.module';
 import { ReviewModule } from './review/review.module';
 import { RoutingModule } from './routing/routing.module';
 import { SubscriptionModule } from './subscription/subscription.module';
@@ -75,6 +77,8 @@ function parseBullRedisConnection() {
     PaymentModule,
     ProductModule,
     OrderModule,
+    FeedModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [],

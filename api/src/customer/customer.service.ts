@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchVendorsDto } from './dto/search-vendors.dto';
@@ -231,5 +235,96 @@ export class CustomerService {
       responseRate: vendor.stats?.responseRate ?? null,
       subscriptionTier: vendor.subscription?.plan?.tier ?? null,
     };
+  }
+
+  // ──────────────────────────────────────────────────
+  // Phase 07.2: Favorites
+  // ──────────────────────────────────────────────────
+
+  /**
+   * Get all favorited vendors for a customer.
+   */
+  async getFavorites(userId: string) {
+    const favorites = await this.prisma.favoriteVendor.findMany({
+      where: { customerId: userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        createdAt: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            description: true,
+            pricingMin: true,
+            pricingMax: true,
+            stats: { select: { averageRating: true } },
+          },
+        },
+      },
+    });
+
+    return favorites.map((f) => ({
+      favoriteId: f.id,
+      createdAt: f.createdAt,
+      vendor: {
+        id: f.vendor.id,
+        businessName: f.vendor.businessName,
+        description: f.vendor.description,
+        pricingMin: f.vendor.pricingMin,
+        pricingMax: f.vendor.pricingMax,
+        averageRating: f.vendor.stats?.averageRating ?? null,
+      },
+    }));
+  }
+
+  /**
+   * Add a vendor to customer's favorites.
+   */
+  async addFavorite(userId: string, vendorId: string) {
+    const vendor = await this.prisma.vendorProfile.findUnique({
+      where: { id: vendorId },
+    });
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+
+    const existing = await this.prisma.favoriteVendor.findUnique({
+      where: { customerId_vendorId: { customerId: userId, vendorId } },
+    });
+    if (existing) {
+      throw new ConflictException('Vendor already in favorites');
+    }
+
+    return this.prisma.favoriteVendor.create({
+      data: { customerId: userId, vendorId },
+      select: { id: true, createdAt: true, vendorId: true },
+    });
+  }
+
+  /**
+   * Remove a vendor from customer's favorites.
+   */
+  async removeFavorite(userId: string, vendorId: string) {
+    const favorite = await this.prisma.favoriteVendor.findUnique({
+      where: { customerId_vendorId: { customerId: userId, vendorId } },
+    });
+    if (!favorite) {
+      throw new NotFoundException('Favorite not found');
+    }
+    await this.prisma.favoriteVendor.delete({
+      where: { customerId_vendorId: { customerId: userId, vendorId } },
+    });
+    return { message: 'Removed from favorites' };
+  }
+
+  /**
+   * Check if a vendor is in customer's favorites.
+   */
+  async checkFavorite(userId: string, vendorId: string) {
+    const favorite = await this.prisma.favoriteVendor.findUnique({
+      where: { customerId_vendorId: { customerId: userId, vendorId } },
+    });
+    return { isFavorited: !!favorite };
   }
 }

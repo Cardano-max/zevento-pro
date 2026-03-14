@@ -24,6 +24,11 @@ model User {
   bookings      Booking[]      @relation("CustomerBookings")
   reviews       Review[]       @relation("CustomerReviews")
   productOrders ProductOrder[] @relation("BuyerProductOrders")
+  // Phase 07.2: Enterprise Extension
+  feedPosts     FeedPost[]     @relation("AuthorFeedPosts")
+  feedComments  FeedComment[]  @relation("AuthorFeedComments")
+  favorites     FavoriteVendor[] @relation("CustomerFavorites")
+  reports       Report[]       @relation("UserReports")
 
   @@map("users")
 }
@@ -137,6 +142,8 @@ model VendorProfile {
   productOrders     ProductOrder[]  @relation("VendorProductOrders")
   // Phase 7: Lead routing audit
   routingTraces     LeadRoutingTrace[]
+  // Phase 07.2: Enterprise Extension
+  favorites         FavoriteVendor[]   @relation("VendorFavorites")
 
   @@map("vendor_profiles")
 }
@@ -673,4 +680,82 @@ model LeadRoutingTrace {
   @@index([leadId])
   @@index([vendorId])
   @@map("lead_routing_traces")
+}
+
+// ── Phase 07.2: Enterprise Extension ──
+
+model FeedPost {
+  id          String        @id @default(uuid()) @db.Uuid
+  authorId    String        @map("author_id") @db.Uuid
+  authorRole  String        @map("author_role") @db.VarChar(20) // CUSTOMER | VENDOR
+  title       String?       @db.VarChar(200)
+  body        String        @db.Text
+  category    String        @default("GENERAL") @db.VarChar(30) // REQUIREMENT | OFFER | SHOWCASE | GENERAL
+  mediaUrls   Json?         @map("media_urls") // string[]
+  city        String?       @db.VarChar(100)
+  eventDate   DateTime?     @map("event_date")
+  budgetPaise Int?          @map("budget_paise")
+  status      String        @default("ACTIVE") @db.VarChar(20) // ACTIVE | HIDDEN | REPORTED | DELETED
+  likesCount  Int           @default(0) @map("likes_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  author      User          @relation("AuthorFeedPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  comments    FeedComment[]
+  reports     Report[]      @relation("FeedPostReports")
+
+  @@index([authorId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([category])
+  @@map("feed_posts")
+}
+
+model FeedComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  body      String   @db.Text
+  status    String   @default("ACTIVE") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation("AuthorFeedComments", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("feed_comments")
+}
+
+model FavoriteVendor {
+  id         String        @id @default(uuid()) @db.Uuid
+  customerId String        @map("customer_id") @db.Uuid
+  vendorId   String        @map("vendor_id") @db.Uuid
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  customer   User          @relation("CustomerFavorites", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor     VendorProfile @relation("VendorFavorites", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, vendorId])
+  @@index([customerId])
+  @@map("favorite_vendors")
+}
+
+model Report {
+  id           String    @id @default(uuid()) @db.Uuid
+  reporterId   String    @map("reporter_id") @db.Uuid
+  targetType   String    @map("target_type") @db.VarChar(30) // VENDOR | FEED_POST | MESSAGE | USER
+  targetId     String    @map("target_id") @db.Uuid
+  reason       String    @db.VarChar(100)
+  description  String?   @db.Text
+  status       String    @default("PENDING") @db.VarChar(20) // PENDING | REVIEWED | ACTIONED | DISMISSED
+  adminNote    String?   @map("admin_note") @db.Text
+  reviewedBy   String?   @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  reporter     User      @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  feedPost     FeedPost? @relation("FeedPostReports", fields: [targetId], references: [id])
+
+  @@index([status])
+  @@index([targetType, targetId])
+  @@map("reports")
 }

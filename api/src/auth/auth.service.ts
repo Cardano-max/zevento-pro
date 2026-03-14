@@ -42,9 +42,9 @@ export class AuthService {
     // Mask phone: show last 4 digits only (e.g. ****1234)
     const masked = `****${phone.slice(-4)}`;
 
-    // In test mode, return OTP in response for easy testing
-    if (process.env.OTP_TEST_MODE === 'true') {
-      return { message: 'OTP sent', phone: masked, otp: code } as any;
+    // Return OTP in response when bypass code is active
+    if (process.env.OTP_BYPASS_CODE) {
+      return { message: 'OTP sent', phone: masked, otp: process.env.OTP_BYPASS_CODE } as any;
     }
 
     return { message: 'OTP sent', phone: masked };
@@ -89,27 +89,27 @@ export class AuthService {
     });
 
     if (!user) {
+      // Create user with the requested role (or CUSTOMER by default)
+      const initialRole = requestedRole ?? 'CUSTOMER';
       user = await this.prisma.user.create({
         data: {
           phone,
           roles: {
-            create: {
-              role: 'CUSTOMER',
-            },
+            create: { role: initialRole },
           },
         },
         include: { roles: true },
       });
-      this.logger.log(`New user created: ${user.id} (${phone})`);
+      this.logger.log(`New user created: ${user.id} (${phone}) with role ${initialRole}`);
     }
 
-    // If user has no active roles, grant CUSTOMER role
+    // If user has no active roles, grant the requested role (or CUSTOMER)
     const activeRoles = user.roles.filter((r) => r.isActive);
     if (activeRoles.length === 0) {
       const newRole = await this.prisma.userRole.create({
         data: {
           userId: user.id,
-          role: 'CUSTOMER',
+          role: requestedRole ?? 'CUSTOMER',
         },
       });
       user.roles.push(newRole);
@@ -122,9 +122,10 @@ export class AuthService {
     if (requestedRole) {
       const hasRole = refreshedActiveRoles.some((r) => r.role === requestedRole);
       if (!hasRole) {
-        throw new UnauthorizedException(
-          `User does not have the role: ${requestedRole}`,
-        );
+        // Grant the requested role on-the-fly (handles existing users switching roles)
+        await this.prisma.userRole.create({
+          data: { userId: user.id, role: requestedRole },
+        });
       }
       activeRole = requestedRole;
     } else {

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -12,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { FeedService } from '../feed/feed.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
@@ -34,7 +36,10 @@ import { RoutingOverrideDto } from './dto/routing-override.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly feedService: FeedService,
+  ) {}
 
   @Get('users')
   async listUsers(
@@ -328,5 +333,19 @@ export class AdminController {
     @Body() dto: MarketStatusDto,
   ) {
     return this.adminService.updateMarketStatus(marketId, dto);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Feed Moderation (Phase 07.2)
+  // ──────────────────────────────────────────────────
+
+  @Patch('feed/:id/hide')
+  async toggleHideFeedPost(@Param('id', ParseUUIDPipe) id: string) {
+    return this.feedService.toggleHidePost(id);
+  }
+
+  @Delete('feed/:id')
+  async deleteFeedPost(@Param('id', ParseUUIDPipe) id: string) {
+    return this.feedService.adminDeletePost(id);
   }
 }
