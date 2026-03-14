@@ -42,6 +42,11 @@ export class AuthService {
     // Mask phone: show last 4 digits only (e.g. ****1234)
     const masked = `****${phone.slice(-4)}`;
 
+    // In test mode, return OTP in response for easy testing
+    if (process.env.OTP_TEST_MODE === 'true') {
+      return { message: 'OTP sent', phone: masked, otp: code } as any;
+    }
+
     return { message: 'OTP sent', phone: masked };
   }
 
