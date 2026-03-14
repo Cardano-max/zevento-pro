@@ -150,6 +150,8 @@ Recent decisions affecting current work:
 - [07.2-03]: Inline quote form inside lead card (not modal) for faster vendor workflow
 - [07.2-03]: Hardcoded PLAN_FEATURES per tier (BASIC/PRO/PREMIUM) as fallback if API returns empty array
 - [07.2-03]: Vendor payout = totalPaise - commissionPaise displayed on each booking card
+- [Phase 07.2]: Bookings page uses dashboard analytics as source since no /admin/bookings endpoint exists
+- [Phase 07.2]: Sidebar reorganized into sections (Overview, Management, Content, Finance) with Feed/Reports/Bookings nav
 
 ### Pending Todos
 
