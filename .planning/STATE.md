@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** All 7 phases complete. Full backend platform delivered: auth, vendor onboarding, lead routing, CRM/booking, payments, B2B marketplace, analytics/admin.
+**Current focus:** Phase 07.2 in progress — Enterprise Extension: feed, favorites, reports backend complete (plan 1/N).
 
 ## Current Position
 
-Phase: 7 of 7 (Analytics and Admin Hardening)
-Plan: 2 of 2 in current phase -- COMPLETE
-Status: Phase 07 complete — All plans executed. Routing audit trail (LeadRoutingTrace), admin override, market status management.
-Last activity: 2026-03-13 — Completed quick task 001: client testing portal (client-test-portal.html)
+Phase: 07.2 (Zavento Enterprise Extension)
+Plan: 1 complete in current phase
+Status: Phase 07.2 Plan 01 complete — FeedPost, FeedComment, FavoriteVendor, Report schema extensions + full REST API modules (feed, favorites, reports, admin moderation).
+Last activity: 2026-03-15 — Completed 07.2-01: enterprise backend feed/favorites/reports API
 
-Progress: [██████████] 100% (20/20 plans complete)
+Progress: [██████████] 100% (20/20 original plans + 07.2-01 complete)
 
 ## Performance Metrics
 
@@ -42,6 +42,11 @@ Progress: [██████████] 100% (20/20 plans complete)
 *Updated after each plan completion*
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 07.1 inserted after Phase 7: Wedding Event Planner Platform - Beautiful UI Customer Web App with AI Planning (URGENT) — full customer-facing web app with 2026 trendy UI, AI budget-based wedding planner, service provider discovery, vendor marketplace, mobile-first responsive design
+- Phase 07.2 inserted after Phase 07.1: Zavento Enterprise Extension — Stripe payments, S3 uploads, private messaging (Socket.IO), social feed, vendor availability calendar, favorites, moderation/reporting, full frontend dashboards (customer + vendor + admin), Docker/DevOps. Transforms platform into real enterprise-grade SaaS.
 
 ### Decisions
 
@@ -132,6 +137,11 @@ Recent decisions affecting current work:
 - [07-02]: Override uses upsert on LeadRoutingTrace (not create) to handle re-routing to a previously scored vendor
 - [07-02]: Market status gate uses raw SQL AND clause in findVendorsInRange (both query variants)
 - [07-02]: Override push notification is fire-and-forget (.catch) — non-blocking, consistent with existing notification patterns
+- [07.2-01]: FeedPost/FeedComment use soft-delete (status field) for user-initiated deletes; admin delete is hard-delete
+- [07.2-01]: Report.feedPost relation uses optional FK to allow reports targeting non-feed entities (VENDOR, MESSAGE, USER)
+- [07.2-01]: Favorites use composite unique constraint [customerId, vendorId] for O(1) idempotency checks
+- [07.2-01]: GET /feed is fully public (no JwtAuthGuard) to maximize discoverability
+- [07.2-01]: Prisma generate run manually after schema update since DB unavailable locally (Render hosted)
 
 ### Pending Todos
 
