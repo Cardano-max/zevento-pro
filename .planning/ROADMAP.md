@@ -164,3 +164,21 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 5. Payments and Commission Settlement | 3/3 | Complete | 2026-03-13 |
 | 6. B2B Product Marketplace | 3/3 | Complete | 2026-03-13 |
 | 7. Analytics and Admin Hardening | 2/2 | Complete | 2026-03-13 |
+
+### Phase 07.2: Zavento Enterprise Extension - Stripe Payments S3 Uploads Private Messaging Social Feed Vendor Calendar Real-time WebSockets Full Frontend Dashboards (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 07.2 to break down)
+
+### Phase 07.1: Wedding Event Planner Platform - Beautiful UI Customer Web App with AI Planning (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 07.1 to break down)

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { LoaderCircle, Plus, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { formatBps } from '@/lib/format';
@@ -156,7 +156,7 @@ export default function CommissionRatesPage() {
               disabled={formLoading}
               className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              {formLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+              {formLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : 'Create'}
             </button>
           </form>
           {formMessage && (
@@ -175,7 +175,7 @@ export default function CommissionRatesPage() {
       <div className="rounded-xl border border-slate-200 bg-white">
         {loading ? (
           <div className="flex h-48 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+            <LoaderCircle className="h-6 w-6 animate-spin text-indigo-600" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -211,7 +211,7 @@ export default function CommissionRatesPage() {
                         className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                       >
                         {deleting === rate.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
                         )}

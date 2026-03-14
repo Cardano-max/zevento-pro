@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 
@@ -140,7 +140,7 @@ export default function LoginPage() {
                   boxShadow: phone.length >= 10 && !loading ? '0 4px 16px rgba(99, 102, 241, 0.4)' : 'none',
                 }}
               >
-                {loading ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <>Send OTP <ArrowRight style={{ width: '16px', height: '16px' }} /></>}
+                {loading ? <LoaderCircle style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <>Send OTP <ArrowRight style={{ width: '16px', height: '16px' }} /></>}
               </button>
             </form>
           ) : (
@@ -195,7 +195,7 @@ export default function LoginPage() {
                   boxShadow: otp.length >= 4 && !loading ? '0 4px 16px rgba(99, 102, 241, 0.4)' : 'none',
                 }}
               >
-                {loading ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <>Verify & Sign In <ArrowRight style={{ width: '16px', height: '16px' }} /></>}
+                {loading ? <LoaderCircle style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <>Verify & Sign In <ArrowRight style={{ width: '16px', height: '16px' }} /></>}
               </button>
 
               <button

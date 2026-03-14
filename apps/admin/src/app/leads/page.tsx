@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Search, ArrowRight } from 'lucide-react';
+import { LoaderCircle, Search, ArrowRight } from 'lucide-react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -105,7 +105,7 @@ export default function LeadsPage() {
             disabled={loading || !leadId.trim()}
             className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Trace'}
+            {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : 'Trace'}
           </button>
         </div>
       </form>
@@ -246,7 +246,7 @@ export default function LeadsPage() {
                 className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {overrideLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
                 ) : (
                   <ArrowRight className="h-4 w-4" />
                 )}

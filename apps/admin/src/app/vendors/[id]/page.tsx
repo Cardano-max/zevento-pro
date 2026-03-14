@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Ban, RotateCcw } from 'lucide-react';
+import { ArrowLeft, LoaderCircle, CircleCheck, CircleX, Ban, RotateCcw } from 'lucide-react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -132,7 +132,7 @@ export default function VendorDetailPage() {
 
       {loading && (
         <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <LoaderCircle className="h-8 w-8 animate-spin text-indigo-600" />
         </div>
       )}
 
@@ -189,7 +189,7 @@ export default function VendorDetailPage() {
                   className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
                 >
                   {actionLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
                   ) : (
                     <Ban className="h-4 w-4" />
                   )}
@@ -203,7 +203,7 @@ export default function VendorDetailPage() {
                   className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
                 >
                   {actionLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
                   ) : (
                     <RotateCcw className="h-4 w-4" />
                   )}
@@ -274,11 +274,11 @@ export default function VendorDetailPage() {
                       className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                     >
                       {kycLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
                       ) : kycDecision === 'APPROVED' ? (
-                        <CheckCircle className="h-4 w-4" />
+                        <CircleCheck className="h-4 w-4" />
                       ) : (
-                        <XCircle className="h-4 w-4" />
+                        <CircleX className="h-4 w-4" />
                       )}
                       Submit Review
                     </button>

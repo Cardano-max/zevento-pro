@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -77,7 +77,7 @@ export default function MarketsPage() {
       <div className="rounded-xl border border-slate-200 bg-white">
         {loading ? (
           <div className="flex h-48 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+            <LoaderCircle className="h-6 w-6 animate-spin text-indigo-600" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -119,7 +119,7 @@ export default function MarketsPage() {
                         ))}
                       </select>
                       {updating === market.id && (
-                        <Loader2 className="ml-2 inline h-4 w-4 animate-spin text-indigo-600" />
+                        <LoaderCircle className="ml-2 inline h-4 w-4 animate-spin text-indigo-600" />
                       )}
                     </td>
                   </tr>

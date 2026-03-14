@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, ChevronLeft, ChevronRight, IndianRupee, AlertTriangle, CheckCircle } from 'lucide-react';
+import { LoaderCircle, ChevronLeft, ChevronRight, IndianRupee, TriangleAlert, CircleCheck } from 'lucide-react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { formatPaise, formatDate } from '@/lib/format';
@@ -14,21 +14,18 @@ interface Payment {
   commissionPaise: number;
   payoutStatus: string;
   createdAt: string;
-  vendorName: string;
+  booking?: { vendor?: { businessName?: string } };
+  vendorSubscription?: { vendor?: { businessName?: string } };
 }
 
 interface PaymentListResponse {
   data: Payment[];
-  total: number;
-  page: number;
-  limit: number;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
-interface ReconciliationSummary {
-  totalCollected: number;
-  totalCommission: number;
-  totalPaidOut: number;
-  pendingPayout: number;
+interface ReconciliationResponse {
+  revenueByStream: Array<{ type: string; count: number; totalAmountPaise: number | null; totalCommissionPaise: number | null; totalNetPayoutPaise: number | null }>;
+  payoutBreakdown: Array<{ status: string; count: number; totalPaise: number | null }>;
 }
 
 const payoutBadge: Record<string, string> = {
@@ -40,13 +37,13 @@ const payoutBadge: Record<string, string> = {
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const limit = 20;
 
-  const [recon, setRecon] = useState<ReconciliationSummary | null>(null);
+  const [recon, setRecon] = useState<ReconciliationResponse | null>(null);
   const [reconLoading, setReconLoading] = useState(true);
 
   useEffect(() => {
@@ -54,20 +51,27 @@ export default function PaymentsPage() {
     api<PaymentListResponse>(`/admin/payments?page=${page}&limit=${limit}`)
       .then((res) => {
         setPayments(res.data);
-        setTotal(res.total);
+        setTotalPages(res.pagination?.totalPages ?? 1);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [page]);
 
   useEffect(() => {
-    api<ReconciliationSummary>('/admin/payments/reconciliation')
+    api<ReconciliationResponse>('/admin/payments/reconciliation')
       .then(setRecon)
       .catch(() => {})
       .finally(() => setReconLoading(false));
   }, []);
 
-  const totalPages = Math.ceil(total / limit);
+  // Compute summary from reconciliation data
+  const totalCollected = recon ? recon.revenueByStream.reduce((s, r) => s + (r.totalAmountPaise ?? 0), 0) : 0;
+  const totalCommission = recon ? recon.revenueByStream.reduce((s, r) => s + (r.totalCommissionPaise ?? 0), 0) : 0;
+  const totalPaidOut = recon ? recon.payoutBreakdown.filter((p) => p.status === 'COMPLETED').reduce((s, r) => s + (r.totalPaise ?? 0), 0) : 0;
+  const pendingPayout = recon ? recon.payoutBreakdown.filter((p) => p.status === 'PENDING').reduce((s, r) => s + (r.totalPaise ?? 0), 0) : 0;
+
+  const getVendorName = (p: Payment) =>
+    p.booking?.vendor?.businessName ?? p.vendorSubscription?.vendor?.businessName ?? '—';
 
   return (
     <AdminLayout>
@@ -79,34 +83,14 @@ export default function PaymentsPage() {
       {/* Reconciliation Summary */}
       {reconLoading ? (
         <div className="mb-6 flex h-24 items-center justify-center rounded-xl border border-slate-200 bg-white">
-          <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+          <LoaderCircle className="h-5 w-5 animate-spin text-indigo-600" />
         </div>
       ) : recon ? (
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ReconCard
-            title="Total Collected"
-            value={formatPaise(recon.totalCollected)}
-            icon={IndianRupee}
-            color="bg-blue-50 text-blue-600"
-          />
-          <ReconCard
-            title="Total Commission"
-            value={formatPaise(recon.totalCommission)}
-            icon={IndianRupee}
-            color="bg-indigo-50 text-indigo-600"
-          />
-          <ReconCard
-            title="Paid Out"
-            value={formatPaise(recon.totalPaidOut)}
-            icon={CheckCircle}
-            color="bg-green-50 text-green-600"
-          />
-          <ReconCard
-            title="Pending Payout"
-            value={formatPaise(recon.pendingPayout)}
-            icon={AlertTriangle}
-            color="bg-amber-50 text-amber-600"
-          />
+          <ReconCard title="Total Collected" value={formatPaise(totalCollected)} icon={IndianRupee} color="bg-blue-50 text-blue-600" />
+          <ReconCard title="Total Commission" value={formatPaise(totalCommission)} icon={IndianRupee} color="bg-indigo-50 text-indigo-600" />
+          <ReconCard title="Paid Out" value={formatPaise(totalPaidOut)} icon={CircleCheck} color="bg-green-50 text-green-600" />
+          <ReconCard title="Pending Payout" value={formatPaise(pendingPayout)} icon={TriangleAlert} color="bg-amber-50 text-amber-600" />
         </div>
       ) : null}
 
@@ -120,7 +104,7 @@ export default function PaymentsPage() {
       <div className="rounded-xl border border-slate-200 bg-white">
         {loading ? (
           <div className="flex h-48 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+            <LoaderCircle className="h-6 w-6 animate-spin text-indigo-600" />
           </div>
         ) : (
           <>
@@ -140,7 +124,7 @@ export default function PaymentsPage() {
                   {payments.map((payment) => (
                     <tr key={payment.id} className="border-b border-slate-50">
                       <td className="px-6 py-3 font-medium text-slate-900">{payment.type}</td>
-                      <td className="px-6 py-3 text-slate-600">{payment.vendorName}</td>
+                      <td className="px-6 py-3 text-slate-600">{getVendorName(payment)}</td>
                       <td className="px-6 py-3 text-right font-medium text-slate-900">
                         {formatPaise(payment.amountPaise)}
                       </td>
@@ -148,18 +132,11 @@ export default function PaymentsPage() {
                         {formatPaise(payment.commissionPaise)}
                       </td>
                       <td className="px-6 py-3">
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                            payoutBadge[payment.payoutStatus] || 'bg-slate-100 text-slate-600'
-                          )}
-                        >
+                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', payoutBadge[payment.payoutStatus] || 'bg-slate-100 text-slate-600')}>
                           {payment.payoutStatus}
                         </span>
                       </td>
-                      <td className="px-6 py-3 text-slate-600">
-                        {formatDate(payment.createdAt)}
-                      </td>
+                      <td className="px-6 py-3 text-slate-600">{formatDate(payment.createdAt)}</td>
                     </tr>
                   ))}
                   {payments.length === 0 && (
@@ -175,25 +152,21 @@ export default function PaymentsPage() {
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3">
-                <span className="text-sm text-slate-500">
-                  Page {page} of {totalPages}
-                </span>
+                <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                     className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    Prev
+                    <ChevronLeft className="h-4 w-4" /> Prev
                   </button>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
                     className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                   >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
+                    Next <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -205,17 +178,7 @@ export default function PaymentsPage() {
   );
 }
 
-function ReconCard({
-  title,
-  value,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-}) {
+function ReconCard({ title, value, icon: Icon, color }: { title: string; value: string; icon: React.ComponentType<{ className?: string }>; color: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="flex items-center justify-between">
