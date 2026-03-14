@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Customers can discover and book event services while the platform intelligently routes qualified leads to the best-matched vendors, creating value for both sides of the marketplace.
-**Current focus:** Phase 07.2 in progress — Enterprise Extension: feed/favorites backend + customer web pages complete (plans 1-2 done).
+**Current focus:** Phase 07.2 in progress — Enterprise Extension: feed/favorites backend + customer web pages complete (plans 1-2 done), vendor dashboard complete (plan 3 done).
 
 ## Current Position
 
 Phase: 07.2 (Zavento Enterprise Extension)
-Plan: 2 complete in current phase
-Status: Phase 07.2 Plan 02 complete — Social Feed page, Favorites page, Inbox page, vendor detail favorites toggle, navbar Community+Saved links, home feed preview.
-Last activity: 2026-03-15 — Completed 07.2-02: customer web social feed, favorites, inbox pages
+Plan: 3 complete in current phase
+Status: Phase 07.2 Plan 03 complete — Vendor dashboard all pages upgraded: dashboard, inbox, bookings, calendar, reviews, subscription, profile.
+Last activity: 2026-03-15 — Completed 07.2-03: vendor dashboard enterprise quality all pages
 
 Progress: [██████████] 100% (20/20 original plans + 07.2-01 complete)
 
@@ -145,6 +145,11 @@ Recent decisions affecting current work:
 - [07.2-02]: Feed page public (no auth to view); POST requires auth with router.push to /login?redirect
 - [07.2-02]: Favorites check on vendor detail uses GET /customer/favorites/:id/check — graceful no-op if endpoint missing
 - [07.2-02]: Home feed preview silently swallows API errors so home page never breaks
+- [07.2-03]: inputCls variable inside component for reusable input styles (Tailwind v4 CSS import incompatible with @layer components)
+- [07.2-03]: Client-side star filter for reviews avoids extra API call per star rating
+- [07.2-03]: Inline quote form inside lead card (not modal) for faster vendor workflow
+- [07.2-03]: Hardcoded PLAN_FEATURES per tier (BASIC/PRO/PREMIUM) as fallback if API returns empty array
+- [07.2-03]: Vendor payout = totalPaise - commissionPaise displayed on each booking card
 
 ### Pending Todos
 
@@ -168,5 +173,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-15
-Stopped at: Completed 07.2-02-PLAN.md — Customer web social feed, favorites, inbox pages + navbar updates + home preview.
+Stopped at: Completed 07.2-03-PLAN.md — Vendor dashboard all pages to enterprise quality (dashboard, inbox, bookings, calendar, reviews, subscription, profile).
 Resume file: None
