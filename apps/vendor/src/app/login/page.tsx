@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [role, setRole] = useState<'PLANNER' | 'SUPPLIER'>('PLANNER');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [testOtp, setTestOtp] = useState('');
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -23,10 +24,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const fullPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
-      await api('/auth/otp/send', {
+      const res = await api<{ message: string; phone: string; otp?: string }>('/auth/otp/send', {
         method: 'POST',
         body: JSON.stringify({ phone: fullPhone }),
       });
+      if (res.otp) setTestOtp(res.otp);
       setStep('otp');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send OTP');
@@ -195,6 +197,14 @@ export default function LoginPage() {
                 </p>
               </div>
 
+              {/* Test mode OTP banner */}
+              {testOtp && (
+                <div style={{ backgroundColor: '#fefce8', border: '1.5px solid #fbbf24', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#92400e', margin: '0 0 4px' }}>⚠️ TEST MODE — Your OTP</p>
+                  <p style={{ fontSize: '28px', fontWeight: '800', color: '#b45309', margin: 0, letterSpacing: '0.3em' }}>{testOtp}</p>
+                </div>
+              )}
+
               {/* OTP Input */}
               <div style={{ marginBottom: '20px' }}>
                 <input
@@ -251,7 +261,7 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
+                onClick={() => { setStep('phone'); setOtp(''); setError(''); setTestOtp(''); }}
                 style={{ width: '100%', padding: '10px', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#64748b', cursor: 'pointer' }}
               >
                 ← Change phone number
