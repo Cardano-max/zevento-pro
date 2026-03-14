@@ -16,6 +16,7 @@ async function bootstrap() {
         'http://localhost:3003',
         'https://vendor-sooty.vercel.app',
         'https://admin-roan-one-51.vercel.app',
+        'https://web-xi-flax-21.vercel.app',
       ];
 
   app.enableCors({
