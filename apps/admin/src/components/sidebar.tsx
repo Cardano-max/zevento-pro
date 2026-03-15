@@ -80,7 +80,12 @@ export function Sidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
           <span className="text-sm font-bold text-white">Z</span>
         </div>
-        <span className="text-lg font-semibold text-white">Zevento Pro</span>
+        <div>
+          <span className="text-lg font-semibold text-white">Zevento</span>
+          <span className="ml-1 rounded bg-indigo-600/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400">
+            Admin
+          </span>
+        </div>
       </div>
 
       {/* Navigation */}
