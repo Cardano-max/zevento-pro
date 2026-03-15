@@ -4,16 +4,36 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Star, MapPin, Phone, Camera, ChevronLeft, LoaderCircle,
+  Star, MapPin, Phone, Camera, ChevronLeft, ChevronRight, LoaderCircle,
   TriangleAlert, Users, Award, Calendar, Heart, Send,
-  CircleCheck, ArrowRight, Sparkles, Clock, Briefcase
+  CircleCheck, ArrowRight, Sparkles, Clock, Briefcase,
+  MessageSquare, ChevronDown, Package
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Vendor } from '@/lib/types';
 import { formatPaise, formatRating, formatDate } from '@/lib/format';
 import { useAuthStore } from '@/lib/auth-store';
 
-interface VendorDetail extends Vendor {
+interface ApiService {
+  id: string;
+  title: string;
+  description: string | null;
+  pricePaise: number;
+  priceType?: 'FIXED' | 'STARTING_FROM' | 'CUSTOM_QUOTE';
+  isActive?: boolean;
+  category: { id: string; name: string } | null;
+  images: string[] | null;
+  packages?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    priceInPaise: number;
+    features?: string[];
+    isPopular: boolean;
+  }>;
+}
+
+interface VendorDetail extends Omit<Vendor, 'services' | 'blockedDates'> {
   reviews?: {
     id: string;
     rating: number;
@@ -25,8 +45,180 @@ interface VendorDetail extends Vendor {
   experience?: number;
   teamSize?: number;
   availableDates?: string[];
+  services?: ApiService[];
+  blockedDates?: Array<{ date: string; reason?: string }>;
 }
 
+// ── Availability Calendar ─────────────────────────────────────────────────────
+function AvailabilityCalendar({ blockedDates }: { blockedDates: Array<{ date: string }> }) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const blockedSet = new Set(blockedDates.map((d) => d.date.substring(0, 10)));
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date().toISOString().substring(0, 10);
+
+  const days: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setCurrentMonth(new Date(year, month - 1))}
+          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Previous month"
+        >
+          <ChevronLeft className="w-4 h-4 text-gray-600" />
+        </button>
+        <span className="text-sm font-semibold text-gray-900">
+          {currentMonth.toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+        </span>
+        <button
+          onClick={() => setCurrentMonth(new Date(year, month + 1))}
+          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Next month"
+        >
+          <ChevronRight className="w-4 h-4 text-gray-600" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+          <span key={d} className="text-xs font-medium text-gray-400">{d}</span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, i) => {
+          if (!day) return <div key={i} />;
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const isBlocked = blockedSet.has(dateStr);
+          const isPast = dateStr < today;
+          return (
+            <div
+              key={i}
+              className={`text-xs rounded-lg py-1.5 text-center font-medium
+                ${isPast
+                  ? 'text-gray-300'
+                  : isBlocked
+                  ? 'bg-red-100 text-red-600'
+                  : 'bg-emerald-50 text-emerald-700'
+                }`}
+              title={isBlocked ? 'Unavailable' : isPast ? '' : 'Available'}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-emerald-100 inline-block" />
+          Available
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-red-100 inline-block" />
+          Unavailable
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Service Card ──────────────────────────────────────────────────────────────
+function ServiceCard({ svc }: { svc: ApiService }) {
+  const [showPackages, setShowPackages] = useState(false);
+
+  const priceLabel =
+    svc.priceType === 'CUSTOM_QUOTE'
+      ? 'Custom Quote'
+      : svc.priceType === 'STARTING_FROM'
+      ? `Starting from ${formatPaise(svc.pricePaise)}`
+      : formatPaise(svc.pricePaise);
+
+  return (
+    <div className="border border-gray-100 rounded-2xl p-4 hover:border-rose-200 transition-colors bg-white">
+      {svc.images && svc.images.length > 0 && (
+        <img
+          src={svc.images[0]}
+          alt={svc.title}
+          className="w-full h-32 object-cover rounded-xl mb-3"
+        />
+      )}
+
+      {svc.category && (
+        <span className="inline-block text-xs font-semibold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full mb-2">
+          {svc.category.name}
+        </span>
+      )}
+
+      <h3 className="font-semibold text-gray-900 text-sm mb-1">{svc.title}</h3>
+
+      {svc.description && (
+        <p className="text-xs text-gray-500 line-clamp-2 mb-3">{svc.description}</p>
+      )}
+
+      <p className={`text-sm font-bold mb-3 ${svc.priceType === 'CUSTOM_QUOTE' ? 'text-amber-700' : 'text-rose-700'}`}>
+        {priceLabel}
+      </p>
+
+      {svc.packages && svc.packages.length > 0 && (
+        <>
+          <button
+            onClick={() => setShowPackages(!showPackages)}
+            className="flex items-center gap-1.5 text-xs font-medium text-rose-700 hover:text-rose-800 transition-colors mb-2"
+          >
+            <Package className="w-3.5 h-3.5" />
+            {svc.packages.length} package{svc.packages.length !== 1 ? 's' : ''}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showPackages ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showPackages && (
+            <div className="space-y-2 mt-2">
+              {svc.packages.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  className={`rounded-xl p-3 border ${pkg.isPopular ? 'border-rose-200 bg-rose-50' : 'border-gray-100 bg-gray-50'}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-gray-900">{pkg.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      {pkg.isPopular && (
+                        <span className="text-xs font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded-full">Popular</span>
+                      )}
+                      <span className="text-xs font-bold text-rose-700">{formatPaise(pkg.priceInPaise)}</span>
+                    </div>
+                  </div>
+                  {pkg.description && (
+                    <p className="text-xs text-gray-500 mb-1">{pkg.description}</p>
+                  )}
+                  {pkg.features && pkg.features.length > 0 && (
+                    <ul className="space-y-0.5">
+                      {pkg.features.map((f: string, fi: number) => (
+                        <li key={fi} className="text-xs text-gray-600 flex items-start gap-1">
+                          <CircleCheck className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function VendorDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -46,6 +238,12 @@ export default function VendorDetailPage() {
   });
   const [favorited, setFavorited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
+
+  // Message state
+  const [messageText, setMessageText] = useState('');
+  const [messageSent, setMessageSent] = useState(false);
+  const [messageSending, setMessageSending] = useState(false);
+  const [showMessageForm, setShowMessageForm] = useState(false);
 
   useEffect(() => {
     api<VendorDetail>(`/customer/vendors/${id}`)
@@ -97,6 +295,27 @@ export default function VendorDetailPage() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!isLoggedIn) {
+      router.push(`/login?redirect=/vendors/${id}`);
+      return;
+    }
+    if (!messageText.trim()) return;
+    setMessageSending(true);
+    try {
+      await api(`/customer/messages/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ body: messageText.trim() }),
+      });
+      setMessageSent(true);
+      setMessageText('');
+    } catch (e: any) {
+      alert(e.message || 'Failed to send message');
+    } finally {
+      setMessageSending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-16">
@@ -127,6 +346,7 @@ export default function VendorDetailPage() {
   const rating = vendor.stats?.avgRating;
   const reviews = vendor.stats?.reviewCount ?? 0;
   const bookings = vendor.stats?.totalBookings ?? 0;
+  const activeServices: ApiService[] = vendor.services?.filter((s) => s.isActive !== false) ?? [];
 
   return (
     <div className="min-h-screen bg-[#faf8f5] pt-16">
@@ -254,6 +474,32 @@ export default function VendorDetailPage() {
               </div>
             )}
 
+            {/* Services & Packages */}
+            {activeServices.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-rose-50">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-rose-500" />
+                  Services &amp; Packages
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {activeServices.map((svc) => (
+                    <ServiceCard key={svc.id} svc={svc} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Availability Calendar */}
+            {vendor.blockedDates && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-rose-50">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-rose-500" />
+                  Availability
+                </h2>
+                <AvailabilityCalendar blockedDates={vendor.blockedDates} />
+              </div>
+            )}
+
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
@@ -305,7 +551,7 @@ export default function VendorDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* Pricing */}
+            {/* Pricing + Inquiry Form */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-rose-50 sticky top-24">
               {vendor.pricingMin && (
                 <div className="mb-4">
@@ -323,7 +569,7 @@ export default function VendorDetailPage() {
               {inquiryDone ? (
                 <div className="text-center py-6">
                   <CircleCheck className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                  <h3 className="font-bold text-gray-900 mb-1">Inquiry Sent! 🎉</h3>
+                  <h3 className="font-bold text-gray-900 mb-1">Inquiry Sent!</h3>
                   <p className="text-sm text-gray-500">
                     {vendor.businessName} will contact you shortly. Check your dashboard for updates.
                   </p>
@@ -405,6 +651,73 @@ export default function VendorDetailPage() {
                     </p>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Direct Message */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-rose-50">
+              <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-rose-600" />
+                Direct Message
+              </h3>
+
+              {messageSent ? (
+                <div className="text-center py-3">
+                  <CircleCheck className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-800">Message Sent!</p>
+                  <p className="text-xs text-gray-400 mt-1">The vendor will reply to you soon.</p>
+                  <button
+                    onClick={() => { setMessageSent(false); setShowMessageForm(false); }}
+                    className="mt-3 text-xs text-rose-600 font-medium hover:underline"
+                  >
+                    Send another
+                  </button>
+                </div>
+              ) : showMessageForm ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Write your message..."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-rose-400 resize-none"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={messageSending || !messageText.trim()}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-rose-700 text-white text-sm font-semibold hover:bg-rose-800 disabled:opacity-60 transition-colors"
+                    >
+                      {messageSending ? (
+                        <LoaderCircle className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      Send
+                    </button>
+                    <button
+                      onClick={() => setShowMessageForm(false)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      router.push(`/login?redirect=/vendors/${id}`);
+                      return;
+                    }
+                    setShowMessageForm(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-rose-200 text-rose-700 text-sm font-semibold hover:bg-rose-50 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {isLoggedIn ? 'Send Message' : 'Login to Message'}
+                </button>
               )}
             </div>
 

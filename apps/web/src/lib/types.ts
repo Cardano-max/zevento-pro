@@ -6,6 +6,27 @@ export interface Category {
   children?: Category[];
 }
 
+export interface VendorPackage {
+  id: string;
+  name: string;
+  description?: string;
+  priceInPaise: number;
+  features?: string[];
+  isPopular: boolean;
+}
+
+export interface VendorService {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  basePrice?: number;
+  priceType: 'FIXED' | 'STARTING_FROM' | 'CUSTOM_QUOTE';
+  imageUrls?: string[];
+  isActive: boolean;
+  packages?: VendorPackage[];
+}
+
 export interface Vendor {
   id: string;
   businessName: string;
@@ -19,6 +40,8 @@ export interface Vendor {
   categories?: { category: { id: string; name: string } }[];
   serviceAreas?: { market: { city: string; state: string } }[];
   user?: { name?: string; phone?: string };
+  services?: VendorService[];
+  blockedDates?: string[];
 }
 
 export interface Product {
