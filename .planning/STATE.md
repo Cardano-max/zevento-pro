@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 Phase: 07.2 (Zavento Enterprise Extension)
 Plan: 5/5 complete — PHASE COMPLETE
 Status: Phase 07.2 COMPLETE — All 5 plans done. All apps deployed to production. API on Render, 3 frontend apps on Vercel.
-Last activity: 2026-03-15 — Completed quick-002-02: Vendor services management page, profile extensions (ownerName/phone/TikTok/YouTube), dual-tab inbox with real messaging
+Last activity: 2026-03-15 — Completed quick task 002: vendor services management, real messaging, profile fixes, admin consistency
 
 Progress: [██████████] 100% (20/20 original plans + 07.2 phase complete)
 
@@ -168,6 +168,9 @@ None.
 |---|-------------|------|--------|-----------|
 | 001 | Full beautiful interactive client testing website with dark/light mode toggle 2026 design | 2026-03-13 | 9534f08 | [001-full-beautiful-interactive-client-testin](.planning/quick/001-full-beautiful-interactive-client-testin/) |
 | 002-01 | VendorService CRUD + Conversation/Message schema + messaging API (9 endpoints, 3 Prisma models) | 2026-03-15 | 03dbe6e | [2-fix-zavento-vendor-and-admin-dashboards-](.planning/quick/2-fix-zavento-vendor-and-admin-dashboards-/) |
+| 002-02 | Vendor services CRUD page, extended profile (ownerName/phone/TikTok/YouTube), dual-tab inbox with real messaging | 2026-03-15 | 051a7f3 | [2-fix-zavento-vendor-and-admin-dashboards-](.planning/quick/2-fix-zavento-vendor-and-admin-dashboards-/) |
+| 002-03 | Vendor detail page: services cards, availability calendar, direct message form; customer inbox messages tab | 2026-03-15 | 5540fc3 | [2-fix-zavento-vendor-and-admin-dashboards-](.planning/quick/2-fix-zavento-vendor-and-admin-dashboards-/) |
+| 002-04 | Admin sidebar Admin badge; all 3 Vercel apps deployed (vendor, web, admin) | 2026-03-15 | 020b647 | [2-fix-zavento-vendor-and-admin-dashboards-](.planning/quick/2-fix-zavento-vendor-and-admin-dashboards-/) |
 
 ### Blockers/Concerns
 
