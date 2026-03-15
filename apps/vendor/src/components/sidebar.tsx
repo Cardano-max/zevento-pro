@@ -12,6 +12,7 @@ import {
   Package,
   Crown,
   LogOut,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/lib/auth-store';
@@ -19,6 +20,7 @@ import { useAuthStore } from '@/lib/auth-store';
 const navItems = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Inbox', href: '/inbox', icon: Inbox },
+  { label: 'Services', href: '/services', icon: Layers },
   { label: 'Bookings', href: '/bookings', icon: CreditCard },
   { label: 'Calendar', href: '/calendar', icon: CalendarDays },
   { label: 'Reviews', href: '/reviews', icon: Star },

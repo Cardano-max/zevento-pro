@@ -13,6 +13,7 @@ import { UpdateServiceAreaDto } from './dto/update-service-area.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { UpdateBusinessProfileDto } from './dto/update-business-profile.dto';
 
 const MAX_PORTFOLIO_PHOTOS = 20;
 
@@ -57,7 +58,7 @@ export class VendorService {
     });
   }
 
-  async updateBusinessDetails(vendorId: string, dto: CreateProfileDto) {
+  async updateBusinessDetails(vendorId: string, dto: UpdateBusinessProfileDto) {
     const profile = await this.findProfileOrThrow(vendorId);
 
     // Validate pricingMax >= pricingMin
@@ -71,52 +72,72 @@ export class VendorService {
       );
     }
 
-    // Validate all categoryIds exist
-    const categories = await this.prisma.eventCategory.findMany({
-      where: { id: { in: dto.categoryIds }, isActive: true },
-      select: { id: true },
-    });
-    if (categories.length !== dto.categoryIds.length) {
-      throw new BadRequestException(
-        'One or more category IDs are invalid or inactive',
-      );
+    // Build profile update data
+    const profileUpdateData: Record<string, unknown> = {};
+    if (dto.businessName !== undefined) profileUpdateData.businessName = dto.businessName;
+    if (dto.description !== undefined) profileUpdateData.description = dto.description;
+    if (dto.pricingMin !== undefined) profileUpdateData.pricingMin = dto.pricingMin;
+    if (dto.pricingMax !== undefined) profileUpdateData.pricingMax = dto.pricingMax;
+    if (dto.contactEmail !== undefined) profileUpdateData.contactEmail = dto.contactEmail;
+    if (dto.websiteUrl !== undefined) profileUpdateData.websiteUrl = dto.websiteUrl;
+    if (dto.instagramUrl !== undefined) profileUpdateData.instagramUrl = dto.instagramUrl;
+    if (dto.facebookUrl !== undefined) profileUpdateData.facebookUrl = dto.facebookUrl;
+    if (dto.yearsExperience !== undefined) profileUpdateData.yearsExperience = dto.yearsExperience;
+    if (dto.ownerName !== undefined) profileUpdateData.ownerName = dto.ownerName;
+    if (dto.phone !== undefined) profileUpdateData.phone = dto.phone;
+    if (dto.tiktokUrl !== undefined) profileUpdateData.tiktokUrl = dto.tiktokUrl;
+    if (dto.youtubeUrl !== undefined) profileUpdateData.youtubeUrl = dto.youtubeUrl;
+
+    profileUpdateData.onboardingStep = Math.max(profile.onboardingStep, 2);
+
+    // Allow re-editing after rejection
+    if (profile.status === VendorStatus.REJECTED) {
+      profileUpdateData.status = VendorStatus.DRAFT;
+      profileUpdateData.rejectionReason = null;
     }
 
-    // Transaction: update profile + replace categories
-    return this.prisma.$transaction(async (tx) => {
-      // Delete existing categories
-      await tx.vendorCategory.deleteMany({ where: { vendorId } });
-
-      // Insert new categories
-      await tx.vendorCategory.createMany({
-        data: dto.categoryIds.map((categoryId) => ({
-          vendorId,
-          categoryId,
-        })),
+    // If categoryIds provided, validate and replace them
+    if (dto.categoryIds && dto.categoryIds.length > 0) {
+      const categories = await this.prisma.eventCategory.findMany({
+        where: { id: { in: dto.categoryIds }, isActive: true },
+        select: { id: true },
       });
+      if (categories.length !== dto.categoryIds.length) {
+        throw new BadRequestException(
+          'One or more category IDs are invalid or inactive',
+        );
+      }
 
-      // Update profile
-      return tx.vendorProfile.update({
-        where: { id: vendorId },
-        data: {
-          businessName: dto.businessName,
-          description: dto.description,
-          pricingMin: dto.pricingMin,
-          pricingMax: dto.pricingMax,
-          onboardingStep: Math.max(profile.onboardingStep, 2),
-          // Allow re-editing after rejection
-          ...(profile.status === VendorStatus.REJECTED
-            ? { status: VendorStatus.DRAFT, rejectionReason: null }
-            : {}),
-        },
-        include: {
-          categories: { include: { category: true } },
-          photos: { orderBy: { sortOrder: 'asc' } },
-          serviceAreas: { include: { market: true } },
-          kycDocuments: true,
-          subscription: { include: { plan: true } },
-        },
+      return this.prisma.$transaction(async (tx) => {
+        await tx.vendorCategory.deleteMany({ where: { vendorId } });
+        await tx.vendorCategory.createMany({
+          data: dto.categoryIds!.map((categoryId) => ({ vendorId, categoryId })),
+        });
+        return tx.vendorProfile.update({
+          where: { id: vendorId },
+          data: profileUpdateData,
+          include: {
+            categories: { include: { category: true } },
+            photos: { orderBy: { sortOrder: 'asc' } },
+            serviceAreas: { include: { market: true } },
+            kycDocuments: true,
+            subscription: { include: { plan: true } },
+          },
+        });
       });
+    }
+
+    // No categoryIds — just update profile fields
+    return this.prisma.vendorProfile.update({
+      where: { id: vendorId },
+      data: profileUpdateData,
+      include: {
+        categories: { include: { category: true } },
+        photos: { orderBy: { sortOrder: 'asc' } },
+        serviceAreas: { include: { market: true } },
+        kycDocuments: true,
+        subscription: { include: { plan: true } },
+      },
     });
   }
 

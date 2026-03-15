@@ -150,6 +150,16 @@ model VendorProfile {
   // Quick-002: VendorService + Messaging
   services          VendorService[]    @relation("VendorServices")
   conversations     Conversation[]     @relation("VendorConversations")
+  // Quick-002-02: Extended profile fields
+  contactEmail      String?  @map("contact_email") @db.VarChar(255)
+  websiteUrl        String?  @map("website_url") @db.Text
+  instagramUrl      String?  @map("instagram_url") @db.Text
+  facebookUrl       String?  @map("facebook_url") @db.Text
+  yearsExperience   Int?     @map("years_experience")
+  ownerName         String?  @map("owner_name") @db.VarChar(100)
+  phone             String?  @db.VarChar(20)
+  tiktokUrl         String?  @map("tiktok_url") @db.Text
+  youtubeUrl        String?  @map("youtube_url") @db.Text
 
   @@map("vendor_profiles")
 }

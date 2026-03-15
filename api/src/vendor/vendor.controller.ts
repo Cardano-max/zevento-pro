@@ -30,6 +30,7 @@ import { UpdateServiceAreaDto } from './dto/update-service-area.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { UpdateBusinessProfileDto } from './dto/update-business-profile.dto';
 
 const IMAGE_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const DOCUMENT_MIMETYPES = [...IMAGE_MIMETYPES, 'application/pdf'];
@@ -83,7 +84,7 @@ export class VendorController {
   @UseGuards(VendorOwnerGuard)
   updateBusinessDetails(
     @Req() req: any,
-    @Body() dto: CreateProfileDto,
+    @Body() dto: UpdateBusinessProfileDto,
   ) {
     return this.vendorService.updateBusinessDetails(req.vendorId, dto);
   }

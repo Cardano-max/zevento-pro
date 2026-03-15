@@ -1,7 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Upload, Trash2, CheckCircle, AlertCircle, Instagram, Globe, Facebook, ImagePlus } from 'lucide-react';
+import {
+  Loader2,
+  Upload,
+  Trash2,
+  CheckCircle,
+  AlertCircle,
+  Instagram,
+  Globe,
+  Facebook,
+  ImagePlus,
+  Phone,
+  Video,
+  Youtube,
+  User,
+} from 'lucide-react';
 import { VendorLayout } from '@/components/layout';
 import { api, apiUpload } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -14,7 +28,11 @@ interface VendorProfile {
   websiteUrl: string | null;
   instagramUrl?: string | null;
   facebookUrl?: string | null;
+  tiktokUrl?: string | null;
+  youtubeUrl?: string | null;
   yearsExperience?: number | null;
+  ownerName?: string | null;
+  phone?: string | null;
   onboardingStep: number;
   kycStatus: string;
   categories: Array<{ id: string; name: string }>;
@@ -34,39 +52,52 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // Form fields
+  // Business Information fields
   const [businessName, setBusinessName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
   const [description, setDescription] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
+  const [yearsExperience, setYearsExperience] = useState('');
+
+  // Social Media fields
   const [instagramUrl, setInstagramUrl] = useState('');
   const [facebookUrl, setFacebookUrl] = useState('');
-  const [yearsExperience, setYearsExperience] = useState('');
+  const [tiktokUrl, setTiktokUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   function showToast(type: 'success' | 'error', message: string) {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
   }
 
+  async function loadProfile() {
+    const p = await api<VendorProfile>('/vendor/profile/me');
+    setProfile(p);
+    setBusinessName(p.businessName || '');
+    setOwnerName(p.ownerName || '');
+    setDescription(p.description || '');
+    setContactEmail(p.contactEmail || '');
+    setPhone(p.phone || '');
+    setWebsiteUrl(p.websiteUrl || '');
+    setInstagramUrl(p.instagramUrl || '');
+    setFacebookUrl(p.facebookUrl || '');
+    setTiktokUrl(p.tiktokUrl || '');
+    setYoutubeUrl(p.youtubeUrl || '');
+    setYearsExperience(p.yearsExperience ? String(p.yearsExperience) : '');
+  }
+
   useEffect(() => {
-    api<VendorProfile>('/vendor/profile/me')
-      .then((p) => {
-        setProfile(p);
-        setBusinessName(p.businessName || '');
-        setDescription(p.description || '');
-        setContactEmail(p.contactEmail || '');
-        setWebsiteUrl(p.websiteUrl || '');
-        setInstagramUrl(p.instagramUrl || '');
-        setFacebookUrl(p.facebookUrl || '');
-        setYearsExperience(p.yearsExperience ? String(p.yearsExperience) : '');
-      })
+    loadProfile()
       .catch((err) => showToast('error', err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20';
+  const inputCls =
+    'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20';
 
-  async function handleSaveProfile(e: React.FormEvent) {
+  async function handleSaveBusinessInfo(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
@@ -74,17 +105,38 @@ export default function ProfilePage() {
         method: 'PATCH',
         body: JSON.stringify({
           businessName,
+          ownerName: ownerName || undefined,
           description,
-          contactEmail,
-          websiteUrl,
-          instagramUrl: instagramUrl || undefined,
-          facebookUrl: facebookUrl || undefined,
+          contactEmail: contactEmail || undefined,
+          phone: phone || undefined,
+          websiteUrl: websiteUrl || undefined,
           yearsExperience: yearsExperience ? parseInt(yearsExperience, 10) : undefined,
         }),
       });
-      showToast('success', 'Profile updated successfully');
-      const p = await api<VendorProfile>('/vendor/profile/me');
-      setProfile(p);
+      showToast('success', 'Business information updated');
+      await loadProfile();
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveSocialLinks(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api('/vendor/profile/business', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          instagramUrl: instagramUrl || undefined,
+          facebookUrl: facebookUrl || undefined,
+          tiktokUrl: tiktokUrl || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+        }),
+      });
+      showToast('success', 'Social links updated');
+      await loadProfile();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Failed to save');
     } finally {
@@ -100,14 +152,12 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append('photo', file);
       await apiUpload('/vendor/profile/photos', formData);
-      const p = await api<VendorProfile>('/vendor/profile/me');
-      setProfile(p);
+      await loadProfile();
       showToast('success', 'Photo uploaded successfully');
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploadingPhoto(false);
-      // Reset file input
       e.target.value = '';
     }
   }
@@ -115,8 +165,7 @@ export default function ProfilePage() {
   async function handleDeletePhoto(photoId: string) {
     try {
       await api(`/vendor/profile/photos/${photoId}`, { method: 'DELETE' });
-      const p = await api<VendorProfile>('/vendor/profile/me');
-      setProfile(p);
+      await loadProfile();
       showToast('success', 'Photo removed');
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Delete failed');
@@ -128,8 +177,7 @@ export default function ProfilePage() {
     try {
       await api('/vendor/profile/kyc/submit', { method: 'POST' });
       showToast('success', 'KYC submitted for review. We will notify you within 1-2 business days.');
-      const p = await api<VendorProfile>('/vendor/profile/me');
-      setProfile(p);
+      await loadProfile();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'KYC submission failed');
     } finally {
@@ -147,8 +195,7 @@ export default function ProfilePage() {
       formData.append('type', 'BUSINESS_REGISTRATION');
       await apiUpload('/vendor/profile/kyc/documents', formData);
       showToast('success', 'KYC document uploaded. Now submit for review.');
-      const p = await api<VendorProfile>('/vendor/profile/me');
-      setProfile(p);
+      await loadProfile();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -197,10 +244,11 @@ export default function ProfilePage() {
 
       {!loading && profile && (
         <div className="space-y-6">
-          {/* Business Details */}
+          {/* ── Business Information ── */}
           <div className="rounded-xl border border-slate-200 bg-white p-6">
-            <h2 className="mb-5 text-lg font-semibold text-slate-900">Business Details</h2>
-            <form onSubmit={handleSaveProfile} className="space-y-5">
+            <h2 className="mb-5 text-lg font-semibold text-slate-900">Business Information</h2>
+            <form onSubmit={handleSaveBusinessInfo} className="space-y-5">
+              {/* Row 1: Business Name + Owner Name */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField label="Business Name" required>
                   <input
@@ -208,19 +256,50 @@ export default function ProfilePage() {
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     required
+                    placeholder="Your business name"
                     className={inputCls}
                   />
                 </FormField>
+                <FormField label="Owner Name">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={ownerName}
+                      onChange={(e) => setOwnerName(e.target.value)}
+                      placeholder="Your full name"
+                      className={cn(inputCls, 'pl-9')}
+                    />
+                  </div>
+                </FormField>
+              </div>
+
+              {/* Row 2: Contact Email + Phone */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField label="Contact Email">
                   <input
                     type="email"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="hello@yourbusiness.com"
                     className={inputCls}
                   />
                 </FormField>
+                <FormField label="Phone">
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      className={cn(inputCls, 'pl-9')}
+                    />
+                  </div>
+                </FormField>
               </div>
 
+              {/* Description */}
               <FormField label="Description" hint="Tell customers what makes your business special">
                 <textarea
                   value={description}
@@ -231,6 +310,7 @@ export default function ProfilePage() {
                 />
               </FormField>
 
+              {/* Row 3: Years + Website */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField label="Years of Experience">
                   <input
@@ -257,41 +337,12 @@ export default function ProfilePage() {
                 </FormField>
               </div>
 
-              {/* Social Links */}
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-slate-700">Social Media Links</h3>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField label="Instagram">
-                    <div className="relative">
-                      <Instagram className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pink-400" />
-                      <input
-                        type="url"
-                        value={instagramUrl}
-                        onChange={(e) => setInstagramUrl(e.target.value)}
-                        placeholder="https://instagram.com/yourbusiness"
-                        className={cn(inputCls, 'pl-9')}
-                      />
-                    </div>
-                  </FormField>
-                  <FormField label="Facebook">
-                    <div className="relative">
-                      <Facebook className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
-                      <input
-                        type="url"
-                        value={facebookUrl}
-                        onChange={(e) => setFacebookUrl(e.target.value)}
-                        placeholder="https://facebook.com/yourbusiness"
-                        className={cn(inputCls, 'pl-9')}
-                      />
-                    </div>
-                  </FormField>
-                </div>
-              </div>
-
-              {/* Categories (read-only display) */}
+              {/* Categories (read-only) */}
               {profile.categories.length > 0 && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Service Categories</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Service Categories
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {profile.categories.map((cat) => (
                       <span
@@ -308,10 +359,12 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Service Areas (read-only display) */}
+              {/* Service Areas (read-only) */}
               {profile.serviceAreas.length > 0 && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Service Areas</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Service Areas
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {profile.serviceAreas.map((area) => (
                       <span
@@ -332,14 +385,81 @@ export default function ProfilePage() {
                   className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                  Save Changes
+                  Save Business Info
                 </button>
-                <p className="text-xs text-slate-400">All changes are saved immediately</p>
               </div>
             </form>
           </div>
 
-          {/* Portfolio Photos */}
+          {/* ── Social Media Links ── */}
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <h2 className="mb-5 text-lg font-semibold text-slate-900">Social Media Links</h2>
+            <form onSubmit={handleSaveSocialLinks} className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField label="Instagram">
+                  <div className="relative">
+                    <Instagram className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pink-400" />
+                    <input
+                      type="url"
+                      value={instagramUrl}
+                      onChange={(e) => setInstagramUrl(e.target.value)}
+                      placeholder="https://instagram.com/yourbusiness"
+                      className={cn(inputCls, 'pl-9')}
+                    />
+                  </div>
+                </FormField>
+                <FormField label="Facebook">
+                  <div className="relative">
+                    <Facebook className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
+                    <input
+                      type="url"
+                      value={facebookUrl}
+                      onChange={(e) => setFacebookUrl(e.target.value)}
+                      placeholder="https://facebook.com/yourbusiness"
+                      className={cn(inputCls, 'pl-9')}
+                    />
+                  </div>
+                </FormField>
+                <FormField label="TikTok">
+                  <div className="relative">
+                    <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pink-400" />
+                    <input
+                      type="url"
+                      value={tiktokUrl}
+                      onChange={(e) => setTiktokUrl(e.target.value)}
+                      placeholder="https://tiktok.com/@yourbusiness"
+                      className={cn(inputCls, 'pl-9')}
+                    />
+                  </div>
+                </FormField>
+                <FormField label="YouTube">
+                  <div className="relative">
+                    <Youtube className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-red-500" />
+                    <input
+                      type="url"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      placeholder="https://youtube.com/@yourchannel"
+                      className={cn(inputCls, 'pl-9')}
+                    />
+                  </div>
+                </FormField>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                  Save Social Links
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* ── Portfolio Photos ── */}
           <div className="rounded-xl border border-slate-200 bg-white p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -348,12 +468,14 @@ export default function ProfilePage() {
                   {profile.photos.length} photo{profile.photos.length !== 1 ? 's' : ''} uploaded
                 </p>
               </div>
-              <label className={cn(
-                'flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                uploadingPhoto
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
-              )}>
+              <label
+                className={cn(
+                  'flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  uploadingPhoto
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                )}
+              >
                 {uploadingPhoto ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -383,53 +505,48 @@ export default function ProfilePage() {
                 />
               </label>
             ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {profile.photos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100"
-                    >
-                      <img
-                        src={photo.url}
-                        alt={photo.caption || 'Portfolio photo'}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      />
-                      {/* Dark overlay on hover */}
-                      <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                      {/* Delete button */}
-                      <button
-                        onClick={() => handleDeletePhoto(photo.id)}
-                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-red-700"
-                        title="Remove photo"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                      {photo.caption && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 p-2 opacity-0 transition-opacity group-hover:opacity-100">
-                          <p className="truncate text-xs text-white">{photo.caption}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Upload tile */}
-                  <label className="flex cursor-pointer aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/30 transition-colors">
-                    <ImagePlus className="h-6 w-6 text-slate-300" />
-                    <span className="mt-1 text-xs text-slate-400">Add more</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {profile.photos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100"
+                  >
+                    <img
+                      src={photo.url}
+                      alt={photo.caption || 'Portfolio photo'}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
-                  </label>
-                </div>
-              </>
+                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+                    <button
+                      onClick={() => handleDeletePhoto(photo.id)}
+                      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-red-700"
+                      title="Remove photo"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    {photo.caption && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <p className="truncate text-xs text-white">{photo.caption}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {/* Upload tile */}
+                <label className="flex cursor-pointer aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/30 transition-colors">
+                  <ImagePlus className="h-6 w-6 text-slate-300" />
+                  <span className="mt-1 text-xs text-slate-400">Add more</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             )}
           </div>
 
-          {/* KYC Section */}
+          {/* ── KYC Verification ── */}
           <div className="rounded-xl border border-slate-200 bg-white p-6">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">KYC Verification</h2>
 
@@ -489,7 +606,9 @@ export default function ProfilePage() {
                   <Upload className="h-5 w-5 shrink-0 text-slate-400" />
                   <div>
                     <p className="font-medium">Upload KYC Document</p>
-                    <p className="text-xs text-slate-400">Business Registration, GST certificate, or PAN card</p>
+                    <p className="text-xs text-slate-400">
+                      Business Registration, GST certificate, or PAN card
+                    </p>
                   </div>
                   <input
                     type="file"
