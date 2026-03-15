@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 Phase: 07.2 (Zavento Enterprise Extension)
 Plan: 5/5 complete — PHASE COMPLETE
 Status: Phase 07.2 COMPLETE — All 5 plans done. All apps deployed to production. API on Render, 3 frontend apps on Vercel.
-Last activity: 2026-03-15 — Completed quick-002-01: VendorService CRUD + Conversation/Message schema + messaging API
+Last activity: 2026-03-15 — Completed quick-002-02: Vendor services management page, profile extensions (ownerName/phone/TikTok/YouTube), dual-tab inbox with real messaging
 
 Progress: [██████████] 100% (20/20 original plans + 07.2 phase complete)
 
@@ -152,6 +152,11 @@ Recent decisions affecting current work:
 - [07.2-03]: Vendor payout = totalPaise - commissionPaise displayed on each booking card
 - [Phase 07.2]: Bookings page uses dashboard analytics as source since no /admin/bookings endpoint exists
 - [Phase 07.2]: Sidebar reorganized into sections (Overview, Management, Content, Finance) with Feed/Reports/Bookings nav
+- [quick-002-02]: UpdateBusinessProfileDto with all-optional fields replaces CreateProfileDto for PATCH /vendor/profile/business — PATCH semantics require partial updates, original DTO required categoryIds ArrayMinSize(1)
+- [quick-002-02]: contactEmail, websiteUrl, instagramUrl, facebookUrl added to VendorProfile Prisma schema — these fields were used in frontend but missing from model (silently returning null and ignoring saves)
+- [quick-002-02]: Per-section save buttons in profile page (Business Info / Social Links) — clearer UX than single save-all button
+- [quick-002-02]: 10-second polling (setInterval) for messages instead of WebSocket — sufficient for MVP, no infrastructure required
+- [quick-002-02]: Split-panel chat layout (conversation list + thread) with md: responsive breakpoint — mobile shows list OR thread, desktop shows both
 
 ### Pending Todos
 
