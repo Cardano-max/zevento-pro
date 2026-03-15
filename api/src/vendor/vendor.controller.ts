@@ -28,6 +28,8 @@ import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { UpdateServiceAreaDto } from './dto/update-service-area.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 
 const IMAGE_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const DOCUMENT_MIMETYPES = [...IMAGE_MIMETYPES, 'application/pdf'];
@@ -168,5 +170,75 @@ export class VendorController {
   @Get('me')
   getMyProfile(@CurrentUser() user: JwtPayload) {
     return this.vendorService.getMyProfile(user.userId);
+  }
+}
+
+/**
+ * VendorServicesController
+ * Routes for vendor-created service listings (their marketplace offerings).
+ * Separate from VendorController (which handles profile/photos/KYC).
+ */
+@ApiTags('Vendor Services')
+@ApiBearerAuth('JWT')
+@Controller('vendor/services')
+@UseGuards(JwtAuthGuard, RolesGuard, VendorOwnerGuard)
+@Roles('PLANNER', 'SUPPLIER')
+export class VendorServicesController {
+  constructor(private readonly vendorService: VendorService) {}
+
+  @Get()
+  listServices(@Req() req: any) {
+    return this.vendorService.listServices(req.vendorId);
+  }
+
+  @Post()
+  createService(@Req() req: any, @Body() dto: CreateServiceDto) {
+    return this.vendorService.createService(req.vendorId, dto);
+  }
+
+  @Patch(':id')
+  updateService(
+    @Req() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateServiceDto,
+  ) {
+    return this.vendorService.updateService(req.vendorId, id, dto);
+  }
+
+  @Delete(':id')
+  deleteService(@Req() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    return this.vendorService.deleteService(req.vendorId, id);
+  }
+}
+
+/**
+ * VendorConversationsController
+ * Routes for vendor messaging — read conversations sent by customers.
+ */
+@ApiTags('Vendor Messaging')
+@ApiBearerAuth('JWT')
+@Controller('vendor/conversations')
+@UseGuards(JwtAuthGuard, RolesGuard, VendorOwnerGuard)
+@Roles('PLANNER', 'SUPPLIER')
+export class VendorConversationsController {
+  constructor(private readonly vendorService: VendorService) {}
+
+  @Get()
+  listConversations(@Req() req: any) {
+    return this.vendorService.listConversations(req.vendorId);
+  }
+
+  @Get(':id/messages')
+  getMessages(@Req() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    return this.vendorService.getConversationMessages(req.vendorId, id);
+  }
+
+  @Post(':id/messages')
+  sendMessage(
+    @Req() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('body') body: string,
+  ) {
+    return this.vendorService.sendMessageAsVendor(req.vendorId, id, body);
   }
 }

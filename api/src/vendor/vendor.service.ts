@@ -11,6 +11,8 @@ import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { UpdateServiceAreaDto } from './dto/update-service-area.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 
 const MAX_PORTFOLIO_PHOTOS = 20;
 
@@ -392,6 +394,81 @@ export class VendorService {
     }
 
     return profile;
+  }
+
+  // ── VendorService CRUD ──
+
+  async createService(vendorId: string, dto: CreateServiceDto) {
+    return this.prisma.vendorService.create({
+      data: { vendorId, ...dto },
+      include: { category: { select: { id: true, name: true } } },
+    });
+  }
+
+  async listServices(vendorId: string) {
+    return this.prisma.vendorService.findMany({
+      where: { vendorId },
+      orderBy: { createdAt: 'desc' },
+      include: { category: { select: { id: true, name: true } } },
+    });
+  }
+
+  async updateService(vendorId: string, serviceId: string, dto: UpdateServiceDto) {
+    const svc = await this.prisma.vendorService.findFirst({ where: { id: serviceId, vendorId } });
+    if (!svc) throw new NotFoundException('Service not found');
+    return this.prisma.vendorService.update({
+      where: { id: serviceId },
+      data: dto,
+      include: { category: { select: { id: true, name: true } } },
+    });
+  }
+
+  async deleteService(vendorId: string, serviceId: string) {
+    const svc = await this.prisma.vendorService.findFirst({ where: { id: serviceId, vendorId } });
+    if (!svc) throw new NotFoundException('Service not found');
+    await this.prisma.vendorService.delete({ where: { id: serviceId } });
+    return { deleted: true };
+  }
+
+  // ── Messaging (Vendor Side) ──
+
+  async listConversations(vendorId: string) {
+    return this.prisma.conversation.findMany({
+      where: { vendorId },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        customer: { select: { id: true, name: true, phone: true } },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+  }
+
+  async getConversationMessages(vendorId: string, conversationId: string) {
+    const conv = await this.prisma.conversation.findFirst({ where: { id: conversationId, vendorId } });
+    if (!conv) throw new NotFoundException('Conversation not found');
+    // Mark customer messages as read
+    await this.prisma.message.updateMany({
+      where: { conversationId, senderRole: 'CUSTOMER', readAt: null },
+      data: { readAt: new Date() },
+    });
+    return this.prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async sendMessageAsVendor(vendorId: string, conversationId: string, body: string) {
+    const conv = await this.prisma.conversation.findFirst({ where: { id: conversationId, vendorId } });
+    if (!conv) throw new NotFoundException('Conversation not found');
+    const vendorProfile = await this.prisma.vendorProfile.findUnique({
+      where: { id: vendorId },
+      select: { userId: true },
+    });
+    const msg = await this.prisma.message.create({
+      data: { conversationId, senderId: vendorProfile!.userId, senderRole: 'VENDOR', body },
+    });
+    await this.prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
+    return msg;
   }
 
   private async findProfileOrThrow(vendorId: string) {

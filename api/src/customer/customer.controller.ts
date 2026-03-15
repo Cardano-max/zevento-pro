@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -73,5 +74,30 @@ export class CustomerController {
     @Param('vendorId', ParseUUIDPipe) vendorId: string,
   ) {
     return this.customerService.checkFavorite(user.id, vendorId);
+  }
+
+  // ──────────────────────────────────────────────────
+  // Quick-002: Customer Messaging
+  // ──────────────────────────────────────────────────
+
+  @Post('messages/:vendorId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  sendMessage(
+    @CurrentUser() user: { id: string },
+    @Param('vendorId', ParseUUIDPipe) vendorId: string,
+    @Body('body') body: string,
+  ) {
+    return this.customerService.sendMessageAsCustomer(user.id, vendorId, body);
+  }
+
+  @Get('messages/:vendorId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  getMessages(
+    @CurrentUser() user: { id: string },
+    @Param('vendorId', ParseUUIDPipe) vendorId: string,
+  ) {
+    return this.customerService.getConversationMessages(user.id, vendorId);
   }
 }

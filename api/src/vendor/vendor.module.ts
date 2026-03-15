@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
-import { VendorController } from './vendor.controller';
+import {
+  VendorController,
+  VendorServicesController,
+  VendorConversationsController,
+} from './vendor.controller';
 import { VendorService } from './vendor.service';
 import { VendorOwnerGuard } from './guards/vendor-owner.guard';
 
 @Module({
-  controllers: [VendorController],
+  controllers: [VendorController, VendorServicesController, VendorConversationsController],
   providers: [VendorService, VendorOwnerGuard],
   exports: [VendorService, VendorOwnerGuard],
 })
